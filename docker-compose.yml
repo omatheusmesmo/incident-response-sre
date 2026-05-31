@@ -1,0 +1,26 @@
+# Persistent PostgreSQL for the Layer 3 durability / crash-recovery demo.
+#
+# Dev Services normally starts an *ephemeral* Postgres that is discarded when the
+# app stops - which would wipe workflow state on restart. For crash recovery the
+# database must outlive the JVM, so run this compose stack and point the app at it
+# (see README "Demo: Crash Recovery"). Kafka and Ollama can stay on Dev Services.
+services:
+  postgres:
+    image: postgres:18
+    container_name: incident-postgres
+    environment:
+      POSTGRES_USER: sre
+      POSTGRES_PASSWORD: sre
+      POSTGRES_DB: incidents
+    ports:
+      - "5599:5432"
+    volumes:
+      - incident-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sre -d incidents"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  incident-pgdata:

@@ -1,0 +1,67 @@
+/* Tokyo Night theme for reveal.js (Night variant) + matching highlight.js tokens. */
+:root {
+  --r-background-color: #1a1b26;
+  --r-main-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  --r-main-font-size: 36px;
+  --r-main-color: #c0caf5;
+  --r-block-margin: 20px;
+  --r-heading-margin: 0 0 20px 0;
+  --r-heading-font: var(--r-main-font);
+  --r-heading-color: #7aa2f7;
+  --r-heading-line-height: 1.2;
+  --r-heading-letter-spacing: normal;
+  --r-heading-text-transform: none;
+  --r-heading-text-shadow: none;
+  --r-heading-font-weight: 650;
+  --r-heading1-text-shadow: none;
+  --r-heading1-size: 2.1em;
+  --r-heading2-size: 1.5em;
+  --r-heading3-size: 1.2em;
+  --r-code-font: "JetBrains Mono", "Fira Code", SFMono-Regular, Menlo, Consolas, monospace;
+  --r-link-color: #7dcfff;
+  --r-link-color-dark: #2ac3de;
+  --r-link-color-hover: #bb9af7;
+  --r-selection-background-color: #283457;
+  --r-selection-color: #c0caf5;
+}
+
+.reveal-viewport { background: #16161e; }
+
+.reveal h1, .reveal h2, .reveal h3 { color: var(--r-heading-color); }
+.reveal h2 { color: #bb9af7; }            /* section titles in purple */
+.reveal em { color: #7dcfff; font-style: italic; }
+.reveal strong { color: #ff9e64; font-weight: 700; }
+.reveal a { color: var(--r-link-color); text-decoration: none; }
+.reveal a:hover { color: var(--r-link-color-hover); }
+
+/* lists a touch tighter */
+.reveal ul { display: block; }
+.reveal li { margin: 6px 0; }
+
+/* inline code */
+.reveal code:not(.hljs) { color: #7dcfff; background: #1f2335; padding: 1px 7px; border-radius: 5px; }
+
+/* tables */
+.reveal table { border-collapse: collapse; margin: 0 auto; }
+.reveal table th { color: #7aa2f7; border-bottom: 2px solid #3b4261; }
+.reveal table th, .reveal table td { padding: 8px 16px; border-bottom: 1px solid #292e42; }
+.reveal table tr:last-child td { border-bottom: none; }
+
+/* code blocks */
+.reveal pre { box-shadow: 0 8px 30px rgba(0,0,0,.45); border: 1px solid #29304a; border-radius: 10px; width: 100%; font-size: 0.5em; }
+.reveal pre code { padding: 16px 18px; border-radius: 10px; max-height: 560px; }
+
+/* highlight.js tokens (Tokyo Night) */
+.hljs { color: #9aa5ce; background: #1f2335; }
+.hljs-comment, .hljs-quote { color: #565f89; font-style: italic; }
+.hljs-keyword, .hljs-built_in, .hljs-literal { color: #bb9af7; }
+.hljs-string, .hljs-regexp, .hljs-addition { color: #9ece6a; }
+.hljs-number { color: #ff9e64; }
+.hljs-type, .hljs-class .hljs-title, .hljs-title.class_ { color: #2ac3de; }
+.hljs-title, .hljs-title.function_, .hljs-section { color: #7aa2f7; }
+.hljs-meta, .hljs-meta .hljs-keyword { color: #e0af68; }   /* Java annotations */
+.hljs-attr, .hljs-attribute, .hljs-variable, .hljs-params { color: #7dcfff; }
+.hljs-symbol, .hljs-bullet, .hljs-operator { color: #89ddff; }
+
+/* footer / slide number */
+.reveal .slide-number { background: transparent; color: #565f89; }

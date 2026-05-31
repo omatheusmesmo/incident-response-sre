@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SRE Incident Response — Live Console</title>
+<style>
+  :root{
+    --bg:#1a1b26; --bg2:#16161e; --panel:#1f2335; --panel2:#222a3d; --line:#29304a;
+    --text:#c0caf5; --muted:#565f89; --blue:#7aa2f7; --purple:#bb9af7; --cyan:#7dcfff;
+    --green:#9ece6a; --orange:#ff9e64; --red:#f7768e; --yellow:#e0af68;
+    --p1:#f7768e; --p2:#ff9e64; --p3:#e0af68; --p4:#9ece6a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg2);color:var(--text);
+    font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+  a{color:var(--cyan);text-decoration:none}
+  header{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#1c2333,#15151d)}
+  header h1{font-size:17px;margin:0;font-weight:680;color:var(--blue)}
+  header .home{margin-right:auto;color:var(--muted);font-size:12px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--red)}
+  .dot.on{background:var(--green)}
+  .conn{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+  .triggers{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;padding:18px 24px;border-bottom:1px solid var(--line)}
+  .trig{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:9px}
+  .trig h3{margin:0;font-size:15px;color:var(--text)}
+  .trig .what{color:var(--muted);font-size:12.5px}
+  .path{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;width:max-content}
+  .path.auto{background:#123a2c;color:#9fe7c4;border:1px solid #1d6b4f}
+  .path.hitl{background:#3a2d12;color:var(--yellow);border:1px solid #7a5a1d}
+  details{background:var(--bg2);border:1px solid var(--line);border-radius:9px}
+  details summary{cursor:pointer;padding:7px 11px;font-size:12px;color:var(--cyan);user-select:none}
+  details pre{margin:0;padding:0 12px 11px;font:11.5px/1.5 "JetBrains Mono",Menlo,Consolas,monospace;
+    color:#9aa5ce;white-space:pre-wrap;word-break:break-word}
+  button{font:inherit;border:1px solid var(--line);background:var(--panel2);color:var(--text);
+    padding:9px 14px;border-radius:9px;cursor:pointer;transition:.15s;font-weight:600}
+  button:hover{border-color:var(--blue);transform:translateY(-1px)}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#0b1020}
+  button.ok{background:#123a2c;border-color:#1d6b4f;color:#9fe7c4}
+  button.bad{background:#3a1620;border-color:#7a2b3e;color:#ffb3c2}
+  main{padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:10px;animation:pop .2s}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .card.await{border-color:#7a5a1d;box-shadow:0 0 0 1px #7a5a1d,0 0 26px rgba(255,176,46,.12)}
+  .row{display:flex;align-items:center;gap:10px}
+  .svc{font-weight:680;font-size:15px}
+  .sev{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;color:#0b1020}
+  .sev.P1_CRITICAL{background:var(--p1)} .sev.P2_HIGH{background:var(--p2)}
+  .sev.P3_MEDIUM{background:var(--p3)} .sev.P4_LOW{background:var(--p4)}
+  .status{margin-left:auto;font-size:11px;font-weight:680;padding:3px 10px;border-radius:20px;
+    background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+  .status.await{background:#3a2d12;border-color:#7a5a1d;color:var(--yellow)}
+  .status.resolved{background:#11301f;border-color:#1d6b4f;color:var(--green)}
+  .status.rejected{background:#33141d;border-color:#7a2b3e;color:var(--red)}
+  .status.running{background:#13243a;border-color:#244a78;color:#7fb0ff}
+  .diag{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px}
+  .diag b{color:var(--text)}
+  .badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;margin-left:6px}
+  .badge.dest{background:#3a1620;color:#ffb3c2;border:1px solid #7a2b3e}
+  .badge.safe{background:#123a2c;color:#9fe7c4;border:1px solid #1d6b4f}
+  .actions{display:flex;gap:8px}
+  .meta{color:var(--muted);font-size:11.5px}
+  .steps{display:flex;flex-wrap:wrap;gap:5px}
+  .step{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);background:var(--bg2);transition:.15s}
+  .step.done{color:var(--green);border-color:#1d6b4f}
+  .step.active{color:#0b1020;background:var(--cyan);border-color:var(--cyan);font-weight:700}
+  .empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:50px 0}
+  code{background:#0e1422;padding:1px 6px;border-radius:5px;color:#9fb6d6}
+</style>
+</head>
+<body>
+<header>
+  <span class="home"><a href="/">← home</a></span>
+  <h1>🛟 SRE Incident Response — live console</h1>
+  <div class="conn"><span id="dot" class="dot"></span><span id="connTxt">connecting…</span></div>
+</header>
+
+<section class="triggers" id="triggers"></section>
+
+<main id="grid"><div class="empty" id="empty">No incidents yet — trigger one above.</div></main>
+
+<script>
+const ALERTS = {
+  degradation: {
+    label: "Service degradation",
+    what: "High CPU/memory with errors. Triage usually proposes a SAFE action (investigate / scale) → runs straight through, no approval.",
+    path: "auto", pathLabel: "AUTO-EXECUTE",
+    payload: {source:"prometheus", service:"api-gateway", metric:"cpu_usage", value:95, threshold:80,
+      message:"Pod api-gateway-7d8f2 restart loop. CPU 95%, memory 89%. Error rate 12% on /api/v2/users"}
+  },
+  deadlock: {
+    label: "Hung service",
+    what: "Deadlocked, unrecoverable service. Triage proposes RESTART_POD (DESTRUCTIVE) → workflow pauses for SRE approval.",
+    path: "hitl", pathLabel: "NEEDS APPROVAL",
+    payload: {source:"prometheus", service:"payment-service", metric:"thread_deadlock", value:100, threshold:1,
+      message:"payment-service fully deadlocked: all worker threads BLOCKED, 100% of requests failing, liveness probe failing. Process is hung and unrecoverable; standard remediation is an immediate pod restart."}
+  }
+};
+const byInstance = {};
+const grid = document.getElementById('grid');
+
+// Trigger cards: self-documenting (what it does + path + the exact JSON it POSTs)
+const trigEl = document.getElementById('triggers');
+for (const [k, a] of Object.entries(ALERTS)) {
+  const el = document.createElement('div'); el.className = 'trig';
+  el.innerHTML = `
+    <h3>▲ ${a.label}</h3>
+    <span class="path ${a.path}">${a.pathLabel}</span>
+    <div class="what">${a.what}</div>
+    <details><summary>alert JSON sent → POST /incidents/workflow</summary>
+      <pre>${JSON.stringify(a.payload, null, 2)}</pre></details>
+    <button class="primary" data-k="${k}">Trigger</button>`;
+  el.querySelector('button').onclick = () => trigger(k);
+  trigEl.appendChild(el);
+}
+
+function setConn(on){ document.getElementById('dot').classList.toggle('on',on);
+  document.getElementById('connTxt').textContent = on ? 'connected' : 'disconnected'; }
+function connect(){
+  const ws = new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/incidents');
+  ws.onopen=()=>setConn(true); ws.onclose=()=>{setConn(false);setTimeout(connect,2000);};
+  ws.onmessage=e=>handleEvent(JSON.parse(e.data));
+}
+
+async function trigger(kind){
+  const a = ALERTS[kind];
+  const r = await fetch('/incidents/workflow',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(a.payload)});
+  const j = await r.json();
+  addCard(j.workflowInstanceId, j.incidentId, a);
+}
+
+function addCard(instanceId, incidentId, a){
+  document.getElementById('empty')?.remove();
+  const el = document.createElement('div'); el.className='card';
+  el.innerHTML = `
+    <div class="row"><span class="svc">${a.payload.service}</span>
+      <span class="sev" data-sev></span>
+      <span class="status running" data-status>TRIAGING…</span></div>
+    <div class="meta">workflow <code>${instanceId.slice(0,14)}…</code> · incident <code>${incidentId.slice(0,8)}</code></div>
+    <div class="steps" data-steps></div>
+    <div class="diag" data-diag style="display:none"></div>
+    <div class="actions" data-actions></div>
+    <details><summary>alert payload</summary><pre>${JSON.stringify(a.payload,null,2)}</pre></details>
+    <details><summary>workflow events (live)</summary><pre data-events>(waiting for events…)</pre></details>`;
+  grid.prepend(el);
+  const ctx = {incidentId, el, reached:new Set(), last:-1};
+  byInstance[instanceId] = ctx;
+  renderSteps(ctx);
+}
+
+// Live per-task progress, fed by Flow lifecycle events (flow-lifecycle-out)
+const STEPS = [
+  {label:'triage',      m:['triage']},
+  {label:'metrics',     m:['fetchmetrics']},
+  {label:'decision',    m:['switch']},
+  {label:'approval',    m:['approval']},
+  {label:'remediate',   m:['executeremediation']},
+  {label:'notify',      m:['notify']},
+  {label:'post-mortem', m:['postmortem']},
+  {label:'resolved',    m:['incidentresolved']}
+];
+function stepIndexForTask(task){
+  if(!task) return -1;
+  const t = task.toLowerCase();
+  return STEPS.findIndex(s => s.m.some(x => t.includes(x)));
+}
+function renderSteps(ctx){
+  // done = steps actually reached; active = furthest reached; skipped steps stay blank
+  ctx.el.querySelector('[data-steps]').innerHTML = STEPS.map((s,i)=>{
+    const cls = i === ctx.last ? 'active' : (ctx.reached.has(i) ? 'done' : '');
+    return `<span class="step ${cls}">${s.label}</span>`;
+  }).join('');
+}
+function advanceStep(ctx, task){
+  const idx = stepIndexForTask(task);
+  if(idx < 0) return;
+  ctx.reached.add(idx);
+  ctx.last = Math.max(ctx.last, idx);
+  renderSteps(ctx);
+}
+
+function handleEvent(ev){
+  const ctx = byInstance[ev.flowInstanceId];
+  if(!ctx) return;
+
+  if(ev.kind === 'lifecycle'){ advanceStep(ctx, ev.task); return; }
+
+  // domain event (approval.required / resolved) -> live feed + card state
+  const log = ctx.el.querySelector('[data-events]');
+  const shortType = ev.type.replace('com.acme.sre.','');
+  log.textContent = (log.textContent.startsWith('(') ? '' : log.textContent)
+    + `▼ ${shortType}\n${JSON.stringify(ev.data, null, 2)}\n\n`;
+  const d = ev.data || {};
+  if(ev.type.endsWith('approval.required')) renderAwaiting(ctx, d);
+  else if(ev.type.endsWith('resolved')){ const r=STEPS.length-1; ctx.reached.add(r); ctx.last=r; renderSteps(ctx); setStatus(ctx,'RESOLVED','resolved'); }
+}
+
+function renderAwaiting(ctx, ir){
+  const el = ctx.el; el.classList.add('await');
+  if(ir.severity){const s=el.querySelector('[data-sev]');s.textContent=ir.severity.replace('_',' ');s.className='sev '+ir.severity;}
+  setStatus(ctx,'⏸ AWAITING APPROVAL','await');
+  const rem = ir.remediation||{};
+  const diag = el.querySelector('[data-diag]'); diag.style.display='block';
+  diag.innerHTML = `<b>${(rem.type||'').replaceAll('_',' ')}</b>`
+    + `<span class="badge ${rem.destructive?'dest':'safe'}">${rem.destructive?'DESTRUCTIVE':'SAFE'}</span>`
+    + `<br>${rem.description||''}`
+    + (ir.diagnosis? `<br><span class="meta">root cause: ${ir.diagnosis.rootCause||''}</span>`:'');
+  const act = el.querySelector('[data-actions]'); act.innerHTML='';
+  const ok=document.createElement('button'); ok.className='ok'; ok.textContent='✓ Approve restart'; ok.onclick=()=>decide(ctx,'approve');
+  const no=document.createElement('button'); no.className='bad'; no.textContent='✕ Reject'; no.onclick=()=>decide(ctx,'reject');
+  act.append(ok,no);
+}
+
+async function decide(ctx, action){
+  ctx.el.querySelector('[data-actions]').innerHTML=''; ctx.el.classList.remove('await');
+  setStatus(ctx, action==='approve'?'APPROVED — remediating…':'REJECTED', action==='approve'?'running':'rejected');
+  try {
+    const r = await fetch(`/incidents/${ctx.incidentId}/${action}`,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({reviewer:'console-user',reason:action==='approve'?'Approved via console':'Rejected via console'})});
+    if(!r.ok) setStatus(ctx, `${action} failed (${r.status}) — stale incident?`, 'rejected');
+  } catch(e){ setStatus(ctx, `${action} error`, 'rejected'); }
+}
+
+function setStatus(ctx,text,cls){ const s=ctx.el.querySelector('[data-status]'); s.textContent=text; s.className='status '+cls; }
+connect();
+</script>
+</body>
+</html>
