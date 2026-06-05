@@ -22,10 +22,21 @@
   .dot{width:9px;height:9px;border-radius:50%;background:var(--red)}
   .dot.on{background:var(--green)}
   .conn{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
-  .triggers{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;padding:18px 24px;border-bottom:1px solid var(--line)}
-  .trig{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:9px}
-  .trig h3{margin:0;font-size:15px;color:var(--text)}
-  .trig .what{color:var(--muted);font-size:12.5px}
+
+  .layer{border-bottom:1px solid var(--line);padding:16px 24px}
+  .layer-head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+  .layer-tag{font-size:11px;font-weight:800;letter-spacing:.5px;padding:3px 9px;border-radius:6px}
+  .layer-tag.l1{background:#13243a;color:#7fb0ff;border:1px solid #244a78}
+  .layer-tag.l2{background:#2a1f3d;color:var(--purple);border:1px solid #4a3a78}
+  .layer-tag.l3{background:#123a2c;color:#9fe7c4;border:1px solid #1d6b4f}
+  .layer-head .ttl{font-size:14px;font-weight:680}
+  .layer-head .sub{color:var(--muted);font-size:12.5px}
+  .triggers{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .trig{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+  .trig h3{margin:0;font-size:14px;color:var(--text)}
+  .trig .what{color:var(--muted);font-size:12px;flex:1}
+  .pat{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;width:max-content;
+    background:#1b2440;color:var(--cyan);border:1px solid #2c3a63}
   .path{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;width:max-content}
   .path.auto{background:#123a2c;color:#9fe7c4;border:1px solid #1d6b4f}
   .path.hitl{background:#3a2d12;color:var(--yellow);border:1px solid #7a5a1d}
@@ -36,6 +47,7 @@
   button{font:inherit;border:1px solid var(--line);background:var(--panel2);color:var(--text);
     padding:9px 14px;border-radius:9px;cursor:pointer;transition:.15s;font-weight:600}
   button:hover{border-color:var(--blue);transform:translateY(-1px)}
+  button:disabled{opacity:.5;cursor:wait;transform:none}
   button.primary{background:var(--blue);border-color:var(--blue);color:#0b1020}
   button.ok{background:#123a2c;border-color:#1d6b4f;color:#9fe7c4}
   button.bad{background:#3a1620;border-color:#7a2b3e;color:#ffb3c2}
@@ -43,8 +55,13 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:10px;animation:pop .2s}
   @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .card.await{border-color:#7a5a1d;box-shadow:0 0 0 1px #7a5a1d,0 0 26px rgba(255,176,46,.12)}
+  .card.l1{border-left:3px solid var(--blue)}
+  .card.l2{border-left:3px solid var(--purple)}
+  .card.l3{border-left:3px solid var(--green)}
   .row{display:flex;align-items:center;gap:10px}
   .svc{font-weight:680;font-size:15px}
+  .lbadge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px}
+  .lbadge.l1{background:#13243a;color:#7fb0ff} .lbadge.l2{background:#2a1f3d;color:var(--purple)} .lbadge.l3{background:#123a2c;color:#9fe7c4}
   .sev{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;color:#0b1020}
   .sev.P1_CRITICAL{background:var(--p1)} .sev.P2_HIGH{background:var(--p2)}
   .sev.P3_MEDIUM{background:var(--p3)} .sev.P4_LOW{background:var(--p4)}
@@ -54,6 +71,7 @@
   .status.resolved{background:#11301f;border-color:#1d6b4f;color:var(--green)}
   .status.rejected{background:#33141d;border-color:#7a2b3e;color:var(--red)}
   .status.running{background:#13243a;border-color:#244a78;color:#7fb0ff}
+  .status.err{background:#33141d;border-color:#7a2b3e;color:var(--red)}
   .diag{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px}
   .diag b{color:var(--text)}
   .badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;margin-left:6px}
@@ -65,6 +83,9 @@
   .step{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--muted);background:var(--bg2);transition:.15s}
   .step.done{color:var(--green);border-color:#1d6b4f}
   .step.active{color:#0b1020;background:var(--cyan);border-color:var(--cyan);font-weight:700}
+  .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--cyan);border-radius:50%;
+    display:inline-block;animation:rot .8s linear infinite;vertical-align:-2px}
+  @keyframes rot{to{transform:rotate(360deg)}}
   .empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:50px 0}
   code{background:#0e1422;padding:1px 6px;border-radius:5px;color:#9fb6d6}
 </style>
@@ -76,45 +97,193 @@
   <div class="conn"><span id="dot" class="dot"></span><span id="connTxt">connecting…</span></div>
 </header>
 
-<section class="triggers" id="triggers"></section>
+<section class="layer">
+  <div class="layer-head">
+    <span class="layer-tag l1">LAYER 1</span>
+    <span class="ttl">ChatModel</span>
+    <span class="sub">A single <code>@RegisterAiService</code> — alert in, structured analysis out. Stateless.</span>
+  </div>
+  <div class="triggers" id="trig-l1"></div>
+</section>
 
-<main id="grid"><div class="empty" id="empty">No incidents yet — trigger one above.</div></main>
+<section class="layer">
+  <div class="layer-head">
+    <span class="layer-tag l2">LAYER 2</span>
+    <span class="ttl">Agentic patterns</span>
+    <span class="sub">LangChain4j Agentic — each pattern on its own endpoint, one level deep.</span>
+  </div>
+  <div class="triggers" id="trig-l2"></div>
+</section>
+
+<section class="layer">
+  <div class="layer-head">
+    <span class="layer-tag l3">LAYER 3</span>
+    <span class="ttl">Durable workflow (Flow)</span>
+    <span class="sub">Quarkus Flow — durable, event-driven, human-gated. Watch it live below.</span>
+  </div>
+  <div class="triggers" id="trig-l3"></div>
+</section>
+
+<main id="grid"><div class="empty" id="empty">No runs yet — trigger a layer above.</div></main>
 
 <script>
-const ALERTS = {
+// ---- Layer 1: synchronous ChatModel call ----
+const L1 = {
+  label: "Analyze alert", endpoint: "/incidents/alert",
+  what: "Single AI call returns severity + probable cause + suggested action.",
+  payload: {source:"prometheus", service:"api-gateway", metric:"error_rate", value:15.5, threshold:5.0,
+    message:"Error rate exceeded threshold: 15.5% > 5.0% on /api/v2/users"}
+};
+
+// ---- Layer 2: the four agentic patterns (synchronous) ----
+const L2 = {
+  parallel: {
+    label:"@ParallelAgent", endpoint:"/incidents/parallel",
+    what:"Fan-out: logs + metrics + deploy-history evidence agents run concurrently.",
+    payload:{source:"prometheus", service:"api-gateway", metric:"error_rate", value:15.5, threshold:5.0,
+      message:"Error rate 15.5%; latency p99 climbing after the 14:00 rollout"}
+  },
+  conditional: {
+    label:"@ConditionalAgent", endpoint:"/incidents/conditional",
+    what:"Severity router: P1/P2 → deep diagnosis, P3/P4 → light triage.",
+    payload:{source:"prometheus", service:"payment-service", metric:"availability", value:0, threshold:1,
+      message:"payment-service down: 100% of requests failing, all pods CrashLoopBackOff after v2.3 deploy"}
+  },
+  loop: {
+    label:"@LoopAgent", endpoint:"/incidents/loop",
+    what:"Diagnose → remediate → score, refined until confidence ≥ 0.8. Carries an @ErrorHandler.",
+    payload:{source:"prometheus", service:"payments-api", metric:"heap_used_pct", value:97, threshold:85,
+      message:"OutOfMemoryError, heap climbing, GC pauses increasing after v2.3 deploy"}
+  },
+  commander: {
+    label:"@SupervisorAgent", endpoint:"/incidents/commander",
+    what:"An LLM commander picks which specialists (DB / K8s / network / cache) to consult, then synthesizes.",
+    payload:{source:"prometheus", service:"checkout-api", metric:"db_pool_active", value:100, threshold:80,
+      message:"p99 8s, HikariCP connection pool exhausted, threads blocked acquiring connections"}
+  }
+};
+
+// ---- Layer 3: durable workflow (async, live over WebSocket) ----
+const L3 = {
   degradation: {
-    label: "Service degradation",
-    what: "High CPU/memory with errors. Triage usually proposes a SAFE action (investigate / scale) → runs straight through, no approval.",
-    path: "auto", pathLabel: "AUTO-EXECUTE",
-    payload: {source:"prometheus", service:"api-gateway", metric:"cpu_usage", value:95, threshold:80,
+    label:"Service degradation", path:"auto", pathLabel:"AUTO-EXECUTE",
+    what:"Triage usually proposes a SAFE action → runs straight through, no approval.",
+    payload:{source:"prometheus", service:"api-gateway", metric:"cpu_usage", value:95, threshold:80,
       message:"Pod api-gateway-7d8f2 restart loop. CPU 95%, memory 89%. Error rate 12% on /api/v2/users"}
   },
   deadlock: {
-    label: "Hung service",
-    what: "Deadlocked, unrecoverable service. Triage proposes RESTART_POD (DESTRUCTIVE) → workflow pauses for SRE approval.",
-    path: "hitl", pathLabel: "NEEDS APPROVAL",
-    payload: {source:"prometheus", service:"payment-service", metric:"thread_deadlock", value:100, threshold:1,
+    label:"Hung service", path:"hitl", pathLabel:"NEEDS APPROVAL",
+    what:"Triage proposes RESTART_POD (DESTRUCTIVE) → workflow pauses for SRE approval.",
+    payload:{source:"prometheus", service:"payment-service", metric:"thread_deadlock", value:100, threshold:1,
       message:"payment-service fully deadlocked: all worker threads BLOCKED, 100% of requests failing, liveness probe failing. Process is hung and unrecoverable; standard remediation is an immediate pod restart."}
   }
 };
+
 const byInstance = {};
 const grid = document.getElementById('grid');
 
-// Trigger cards: self-documenting (what it does + path + the exact JSON it POSTs)
-const trigEl = document.getElementById('triggers');
-for (const [k, a] of Object.entries(ALERTS)) {
-  const el = document.createElement('div'); el.className = 'trig';
-  el.innerHTML = `
-    <h3>▲ ${a.label}</h3>
-    <span class="path ${a.path}">${a.pathLabel}</span>
-    <div class="what">${a.what}</div>
-    <details><summary>alert JSON sent → POST /incidents/workflow</summary>
-      <pre>${JSON.stringify(a.payload, null, 2)}</pre></details>
-    <button class="primary" data-k="${k}">Trigger</button>`;
-  el.querySelector('button').onclick = () => trigger(k);
-  trigEl.appendChild(el);
+// ---------- build trigger cards ----------
+function trigCard(html){ const el=document.createElement('div'); el.className='trig'; el.innerHTML=html; return el; }
+
+(function buildL1(){
+  const el = trigCard(`
+    <h3>▲ ${L1.label}</h3>
+    <span class="pat">POST ${L1.endpoint}</span>
+    <div class="what">${L1.what}</div>
+    <details><summary>alert JSON</summary><pre>${JSON.stringify(L1.payload,null,2)}</pre></details>
+    <button class="primary">Run L1</button>`);
+  el.querySelector('button').onclick = (e)=>runSync(e.target,'l1','L1','ChatModel',L1.endpoint,L1.payload);
+  document.getElementById('trig-l1').appendChild(el);
+})();
+
+(function buildL2(){
+  const box = document.getElementById('trig-l2');
+  for(const [k,p] of Object.entries(L2)){
+    const el = trigCard(`
+      <h3>▲ ${p.label}</h3>
+      <span class="pat">POST ${p.endpoint}</span>
+      <div class="what">${p.what}</div>
+      <details><summary>alert JSON</summary><pre>${JSON.stringify(p.payload,null,2)}</pre></details>
+      <button class="primary">Run</button>`);
+    el.querySelector('button').onclick=(e)=>runSync(e.target,'l2','L2',p.label,p.endpoint,p.payload);
+    box.appendChild(el);
+  }
+})();
+
+(function buildL3(){
+  const box = document.getElementById('trig-l3');
+  for(const [k,a] of Object.entries(L3)){
+    const el = trigCard(`
+      <h3>▲ ${a.label}</h3>
+      <span class="path ${a.path}">${a.pathLabel}</span>
+      <div class="what">${a.what}</div>
+      <details><summary>alert JSON → POST /incidents/workflow</summary><pre>${JSON.stringify(a.payload,null,2)}</pre></details>
+      <button class="primary">Trigger workflow</button>`);
+    el.querySelector('button').onclick=()=>triggerWorkflow(a);
+    box.appendChild(el);
+  }
+})();
+
+// ---------- Layer 1 & 2: synchronous request/response ----------
+async function runSync(btn, lclass, ltag, pattern, endpoint, payload){
+  document.getElementById('empty')?.remove();
+  btn.disabled = true;
+  const card = document.createElement('div'); card.className = 'card '+lclass;
+  card.innerHTML = `
+    <div class="row">
+      <span class="lbadge ${lclass}">${ltag}</span>
+      <span class="svc">${payload.service}</span>
+      <span class="status running" data-status><span class="spin"></span> ${pattern}…</span>
+    </div>
+    <div class="meta">${pattern} · POST ${endpoint}</div>
+    <div class="diag" data-body style="display:none"></div>
+    <details><summary>raw response</summary><pre data-raw>(running…)</pre></details>`;
+  grid.prepend(card);
+  const t0 = performance.now();
+  try {
+    const r = await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const j = await r.json();
+    const secs = ((performance.now()-t0)/1000).toFixed(1);
+    card.querySelector('[data-raw]').textContent = JSON.stringify(j,null,2);
+    renderSyncBody(card, ltag, pattern, j);
+    setCardStatus(card, `done · ${secs}s`, 'resolved');
+  } catch(e){
+    card.querySelector('[data-raw]').textContent = String(e);
+    setCardStatus(card, 'error', 'err');
+  } finally { btn.disabled = false; }
 }
 
+function renderSyncBody(card, ltag, pattern, j){
+  const body = card.querySelector('[data-body]'); body.style.display='block';
+  if(j.analysis){ // L1
+    const a=j.analysis; setSev(card,a.severity);
+    body.innerHTML = `<b>${a.severity||''}</b><br>${a.probableCause||''}`
+      + `<br><span class="meta">action: ${a.suggestedAction||''}</span>`;
+  } else if(j.evidence){ // L2 parallel
+    const e=j.evidence;
+    body.innerHTML = `<b>Evidence (3 agents in parallel)</b>`
+      + `<br>📜 ${e.logsFindings||''}`
+      + `<br>📈 ${e.metricsFindings||''}`
+      + `<br>🚀 ${e.deployFindings||''}`;
+  } else if(j.assessment){ // L2 commander
+    body.innerHTML = `<b>Commander assessment</b><br>${j.assessment}`;
+  } else if(j.result){ // L2 conditional / loop
+    const r=j.result; setSev(card,r.severity);
+    const score = r.confidenceScore && (r.confidenceScore.score ?? r.confidenceScore.value);
+    body.innerHTML = (j.branch?`<b>branch: ${j.branch}</b><br>`:'')
+      + (r.diagnosis?`root cause: <b>${r.diagnosis.rootCause||''}</b><br><span class="meta">${r.diagnosis.explanation||''}</span>`:'')
+      + (r.remediation?`<br>action: ${r.remediation.type||''} <span class="badge ${r.remediation.destructive?'dest':'safe'}">${r.remediation.destructive?'DESTRUCTIVE':'SAFE'}</span>`:'')
+      + (score!=null?`<br><span class="meta">confidence: ${score}</span>`:'');
+  } else {
+    body.innerHTML = `<span class="meta">${pattern} returned (see raw response)</span>`;
+  }
+}
+function setSev(card,sev){ if(!sev) return; const r=card.querySelector('.row');
+  const s=document.createElement('span'); s.className='sev '+sev; s.textContent=sev.replace('_',' ');
+  r.insertBefore(s, r.querySelector('[data-status]')); }
+function setCardStatus(card,text,cls){ const s=card.querySelector('[data-status]'); s.textContent=text; s.className='status '+cls; }
+
+// ---------- Layer 3: durable workflow, live ----------
 function setConn(on){ document.getElementById('dot').classList.toggle('on',on);
   document.getElementById('connTxt').textContent = on ? 'connected' : 'disconnected'; }
 function connect(){
@@ -123,19 +292,18 @@ function connect(){
   ws.onmessage=e=>handleEvent(JSON.parse(e.data));
 }
 
-async function trigger(kind){
-  const a = ALERTS[kind];
+async function triggerWorkflow(a){
   const r = await fetch('/incidents/workflow',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(a.payload)});
   const j = await r.json();
-  addCard(j.workflowInstanceId, j.incidentId, a);
+  addWorkflowCard(j.workflowInstanceId, j.incidentId, a);
 }
 
-function addCard(instanceId, incidentId, a){
+function addWorkflowCard(instanceId, incidentId, a){
   document.getElementById('empty')?.remove();
-  const el = document.createElement('div'); el.className='card';
+  const el = document.createElement('div'); el.className='card l3';
   el.innerHTML = `
-    <div class="row"><span class="svc">${a.payload.service}</span>
+    <div class="row"><span class="lbadge l3">L3</span><span class="svc">${a.payload.service}</span>
       <span class="sev" data-sev></span>
       <span class="status running" data-status>TRIAGING…</span></div>
     <div class="meta">workflow <code>${instanceId.slice(0,14)}…</code> · incident <code>${incidentId.slice(0,8)}</code></div>
@@ -150,9 +318,8 @@ function addCard(instanceId, incidentId, a){
   renderSteps(ctx);
 }
 
-// Live per-task progress, fed by Flow lifecycle events (flow-lifecycle-out)
 const STEPS = [
-  {label:'triage',      m:['triage']},
+  {label:'triage',      m:['triage','agenticdiagnosis']},
   {label:'metrics',     m:['fetchmetrics']},
   {label:'decision',    m:['switch']},
   {label:'approval',    m:['approval']},
@@ -167,7 +334,6 @@ function stepIndexForTask(task){
   return STEPS.findIndex(s => s.m.some(x => t.includes(x)));
 }
 function renderSteps(ctx){
-  // done = steps actually reached; active = furthest reached; skipped steps stay blank
   ctx.el.querySelector('[data-steps]').innerHTML = STEPS.map((s,i)=>{
     const cls = i === ctx.last ? 'active' : (ctx.reached.has(i) ? 'done' : '');
     return `<span class="step ${cls}">${s.label}</span>`;
@@ -184,10 +350,7 @@ function advanceStep(ctx, task){
 function handleEvent(ev){
   const ctx = byInstance[ev.flowInstanceId];
   if(!ctx) return;
-
   if(ev.kind === 'lifecycle'){ advanceStep(ctx, ev.task); return; }
-
-  // domain event (approval.required / resolved) -> live feed + card state
   const log = ctx.el.querySelector('[data-events]');
   const shortType = ev.type.replace('com.acme.sre.','');
   log.textContent = (log.textContent.startsWith('(') ? '' : log.textContent)

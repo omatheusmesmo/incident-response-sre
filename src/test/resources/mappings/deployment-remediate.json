@@ -1,0 +1,18 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/deployment/remediate"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "status": "COMPLETED",
+      "message": "Remediation accepted and executed by the deployment controller",
+      "controller": "argocd-prod"
+    },
+    "fixedDelayMilliseconds": 150
+  }
+}

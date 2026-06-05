@@ -5,8 +5,8 @@ import java.util.Map;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import com.acme.sre.ai.WorkflowPostMortemAgent;
-import com.acme.sre.ai.WorkflowTriageAgent;
+import com.acme.sre.ai.diagnostics.IncidentDiagnosisService;
+import com.acme.sre.ai.response.WorkflowPostMortemAgent;
 import com.acme.sre.domain.ApprovalResponse;
 import com.acme.sre.domain.IncidentResult;
 import com.acme.sre.domain.TriagePrompt;
@@ -31,7 +31,7 @@ import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
 public class IncidentResponseFlow extends Flow {
 
     @Inject
-    WorkflowTriageAgent triageAgent;
+    IncidentDiagnosisService diagnosisService;
 
     @Inject
     WorkflowPostMortemAgent postMortemAgent;
@@ -49,7 +49,7 @@ public class IncidentResponseFlow extends Flow {
     public Workflow descriptor() {
         return FuncWorkflowBuilder.workflow("incident-response")
                 .tasks(
-                        agent("triageAgent", triageAgent::triage, TriagePrompt.class)
+                        function("agenticDiagnosis", diagnosisService::diagnose, TriagePrompt.class)
                                 .exportAsTaskOutput(),
 
                         get("fetchMetrics", prometheusUrl)

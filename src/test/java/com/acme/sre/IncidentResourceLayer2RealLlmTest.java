@@ -11,9 +11,24 @@ import static io.restassured.config.HttpClientConfig.httpClientConfig;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
+/**
+ * End-to-end Layer 2 pattern tests against a real LLM (tagged real-llm, excluded by default).
+ * Run with: mvn test -Preal-llm
+ */
 @Tag("real-llm")
 @QuarkusTest
 class IncidentResourceLayer2RealLlmTest {
+
+    private static final String ALERT = """
+            {
+                "source": "prometheus",
+                "service": "api-gateway",
+                "metric": "error_rate",
+                "value": 15.5,
+                "threshold": 5.0,
+                "message": "Error rate exceeded threshold"
+            }
+            """;
 
     @BeforeEach
     void configureTimeouts() {
@@ -22,54 +37,43 @@ class IncidentResourceLayer2RealLlmTest {
     }
 
     @Test
-    void agenticAnalysis_withRealLlm_returnsStructuredResult() {
-        given()
-                .contentType("application/json")
-                .body("""
-                {
-                    "source": "prometheus",
-                    "service": "api-gateway",
-                    "metric": "error_rate",
-                    "value": 15.5,
-                    "threshold": 5.0,
-                    "message": "Error rate exceeded threshold"
-                }
-                """)
-                .when()
-                .post("/incidents/analyze-agentic")
-                .then()
-                .statusCode(200)
-                .body("layer", equalTo("L2_AGENTIC"))
-                .body("incidentId", notNullValue())
-                .body("result", notNullValue())
-                .body("result.severity", notNullValue())
-                .body("result.diagnosis", notNullValue())
-                .body("result.remediation", notNullValue());
+    void parallel_withRealLlm_returnsEvidence() {
+        given().contentType("application/json").body(ALERT)
+                .when().post("/incidents/parallel")
+                .then().statusCode(200)
+                .body("layer", equalTo("L2_PARALLEL"))
+                .body("evidence.logsFindings", notNullValue())
+                .body("evidence.metricsFindings", notNullValue())
+                .body("evidence.deployFindings", notNullValue());
     }
 
     @Test
-    void agenticAnalysis_withRealLlm_persistsIncidentAsResolved() {
-        String incidentId = given()
-                .contentType("application/json")
-                .body("""
-                {
-                    "source": "prometheus",
-                    "service": "api-gateway",
-                    "metric": "error_rate",
-                    "value": 15.5,
-                    "threshold": 5.0,
-                    "message": "Error rate exceeded threshold"
-                }
-                """)
-                .post("/incidents/analyze-agentic")
-                .then()
-                .statusCode(200)
-                .extract().path("incidentId");
+    void conditional_withRealLlm_returnsResult() {
+        given().contentType("application/json").body(ALERT)
+                .when().post("/incidents/conditional")
+                .then().statusCode(200)
+                .body("layer", equalTo("L2_CONDITIONAL"))
+                .body("branch", notNullValue())
+                .body("result.severity", notNullValue())
+                .body("result.diagnosis", notNullValue());
+    }
 
-        given()
-                .get("/incidents/" + incidentId)
-                .then()
-                .statusCode(200)
-                .body("status", equalTo("RESOLVED"));
+    @Test
+    void loop_withRealLlm_returnsResult() {
+        given().contentType("application/json").body(ALERT)
+                .when().post("/incidents/loop")
+                .then().statusCode(200)
+                .body("layer", equalTo("L2_LOOP"))
+                .body("result.diagnosis", notNullValue())
+                .body("result.confidenceScore", notNullValue());
+    }
+
+    @Test
+    void commander_withRealLlm_returnsAssessment() {
+        given().contentType("application/json").body(ALERT)
+                .when().post("/incidents/commander")
+                .then().statusCode(200)
+                .body("layer", equalTo("L2_SUPERVISOR"))
+                .body("assessment", notNullValue());
     }
 }
