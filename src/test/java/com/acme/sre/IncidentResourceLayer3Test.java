@@ -16,13 +16,13 @@ import static org.hamcrest.Matchers.notNullValue;
 class IncidentResourceLayer3Test {
 
     @InjectMock
-    IncidentResponseFlow layer3Flow;
+    IncidentResponseFlow incidentResponseFlow;
 
     @Test
     void startWorkflow_returnsAccepted() {
         WorkflowInstance mockInstance = Mockito.mock(WorkflowInstance.class);
         Mockito.when(mockInstance.id()).thenReturn("wf-test-123");
-        Mockito.when(layer3Flow.instance(Mockito.any())).thenReturn(mockInstance);
+        Mockito.when(incidentResponseFlow.instance(Mockito.any())).thenReturn(mockInstance);
 
         given()
                 .contentType("application/json")
@@ -50,7 +50,7 @@ class IncidentResourceLayer3Test {
     void startWorkflow_persistsIncidentWithWorkflowId() {
         WorkflowInstance mockInstance = Mockito.mock(WorkflowInstance.class);
         Mockito.when(mockInstance.id()).thenReturn("wf-test-456");
-        Mockito.when(layer3Flow.instance(Mockito.any())).thenReturn(mockInstance);
+        Mockito.when(incidentResponseFlow.instance(Mockito.any())).thenReturn(mockInstance);
 
         String incidentId = given()
                 .contentType("application/json")

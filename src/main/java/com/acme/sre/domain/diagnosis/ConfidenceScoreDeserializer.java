@@ -1,4 +1,4 @@
-package com.acme.sre.domain;
+package com.acme.sre.domain.diagnosis;
 
 import java.io.IOException;
 import java.util.regex.Pattern;

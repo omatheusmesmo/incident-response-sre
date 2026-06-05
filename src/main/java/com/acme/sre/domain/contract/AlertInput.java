@@ -1,6 +1,8 @@
-package com.acme.sre.domain;
+package com.acme.sre.domain.contract;
 
 import java.math.BigDecimal;
+
+import com.acme.sre.domain.model.Alert;
 
 public record AlertInput(
         String source,

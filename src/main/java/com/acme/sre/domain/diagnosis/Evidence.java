@@ -1,4 +1,4 @@
-package com.acme.sre.domain;
+package com.acme.sre.domain.diagnosis;
 
 public record Evidence(
         String logsFindings,

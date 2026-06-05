@@ -1,6 +1,6 @@
 package com.acme.sre.ai.diagnostics;
 
-import com.acme.sre.domain.Evidence;
+import com.acme.sre.domain.diagnosis.Evidence;
 
 import dev.langchain4j.agentic.declarative.Output;
 import dev.langchain4j.agentic.declarative.ParallelAgent;

@@ -1,4 +1,4 @@
-package com.acme.sre.domain;
+package com.acme.sre.domain.contract;
 
 public record TriagePrompt(
         String message,

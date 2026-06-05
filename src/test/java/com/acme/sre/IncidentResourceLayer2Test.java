@@ -7,11 +7,11 @@ import com.acme.sre.ai.diagnostics.DiagnosticLoopAgent;
 import com.acme.sre.ai.diagnostics.EvidenceGatherer;
 import com.acme.sre.ai.diagnostics.SeverityClassifier;
 import com.acme.sre.ai.diagnostics.SeverityRouter;
-import com.acme.sre.domain.ActionType;
-import com.acme.sre.domain.Diagnosis;
-import com.acme.sre.domain.Evidence;
-import com.acme.sre.domain.RemediationAction;
-import com.acme.sre.domain.Severity;
+import com.acme.sre.domain.model.ActionType;
+import com.acme.sre.domain.diagnosis.Diagnosis;
+import com.acme.sre.domain.diagnosis.Evidence;
+import com.acme.sre.domain.diagnosis.RemediationAction;
+import com.acme.sre.domain.model.Severity;
 
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;

@@ -1,6 +1,8 @@
-package com.acme.sre.domain;
+package com.acme.sre.domain.diagnosis;
 
 import java.util.Map;
+
+import com.acme.sre.domain.model.ActionType;
 
 public record RemediationAction(
         ActionType type,

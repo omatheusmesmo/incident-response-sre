@@ -77,7 +77,8 @@ The `IncidentResponseFlow` orchestrates the agentic work and adds what agents al
 - **Durability**: MVStore-backed persistence (a file at `~/incident-response-sre-flow.mv.db`). Workflow state survives a full JVM restart.
 - **Human-in-the-Loop**: destructive remediations (`RESTART_POD`, `SCALE_DOWN`) require SRE approval. The workflow emits an approval-request CloudEvent, pauses at `listen`, and resumes when the approval/rejection event arrives.
 - **External integrations**: HTTP tasks fetch Prometheus metrics, execute remediation via a deployment API, and notify Slack (all stubbed by WireMock in dev/test).
-- **Agentic post-mortem**: after remediation, a post-mortem agent (`WorkflowPostMortemAgent`) summarizes the incident as its own Flow `agent(...)` task.
+- **End-to-end type safety**: every Flow transform is fully typed - no `Object.class`. The Prometheus response deserializes into a `MetricsSnapshot` record that is folded into `IncidentResult` (`withLiveMetrics`) and re-exported to the workflow context, so the live telemetry survives downstream restores and feeds the post-mortem prompt. HTTP request/response bodies (`SlackMessage`/`SlackAck`, `RemediationCommand`) and the rejection branch (`RemediationRejection`) are records, not maps.
+- **Agentic post-mortem**: after remediation, a post-mortem agent (`WorkflowPostMortemAgent`) summarizes the incident (using the diagnosis, remediation and live metrics) as its own Flow `agent(...)` task; the generated summary is captured back into `IncidentResult` (`withPostMortem`) and projected onto the `Incident` record.
 - **Event-driven both ways**: consumes alerts/approvals from `flow-in`; publishes domain events (`flow-out`) and per-task lifecycle (`flow-lifecycle-out`) as CloudEvents over Kafka.
 - **Read-model projection**: `IncidentEventBridge` consumes the workflow's own `flow-out` events and projects them back onto the `Incident` JPA record (`PENDING_APPROVAL` when it pauses for HITL, `RESOLVED` when it completes), so `GET /incidents/{id}` stays consistent with the live dashboard.
 
@@ -156,9 +157,9 @@ Publishing is enabled by `quarkus.flow.messaging.defaults-enabled=true` (domain)
 
 ## Observing the demo
 
-### Live console (recommended) — `http://localhost:8080/`
+### Live console (recommended) - `http://localhost:8080/`
 
-A lightweight dashboard (static HTML + a `@ServerEndpoint` WebSocket fed by the Flow `flow-out` topic, no Quinoa/npm) at `/console.html`. It drives **all three layers** from one screen: run the L1 ChatModel and the four L2 patterns (synchronous result cards), and trigger the L3 durable workflow — watching incidents update live (`TRIAGING → ⏸ AWAITING APPROVAL → RESOLVED`) and approving/rejecting a destructive remediation right from the card.
+A lightweight dashboard (static HTML + a `@ServerEndpoint` WebSocket fed by the Flow `flow-out` topic, no Quinoa/npm) at `/console.html`. It drives **all three layers** from one screen: run the L1 ChatModel and the four L2 patterns (synchronous result cards), and trigger the L3 durable workflow - watching incidents update live (`TRIAGING → ⏸ AWAITING APPROVAL → RESOLVED`) and approving/rejecting a destructive remediation right from the card.
 
 Implementation: `com.acme.sre.messaging.IncidentEventBridge` (consumes `flow-out`/`flow-lifecycle-out`) + `IncidentDashboardSocket` (`/ws/incidents`) + `META-INF/resources/{index,console}.html` (landing + console).
 
@@ -171,45 +172,77 @@ Implementation: `com.acme.sre.messaging.IncidentEventBridge` (consumes `flow-out
 
 ## Architecture
 
+The same alert can be handled by any of the three layers; Layer 3 reuses the Layer 2 agentic pipeline as a Flow task and wraps it with durability, HITL and eventing.
+
+```mermaid
+flowchart TD
+    A([Alert Input]) --> L1
+    A --> L2
+    A --> L3
+
+    subgraph L1["Layer 1 - ChatModel"]
+        AN["IncidentAnalyzer · @RegisterAiService<br/>single stateless AI call"]
+    end
+
+    subgraph L2["Layer 2 - Agentic patterns (each one level deep)"]
+        P["/parallel · EvidenceGatherer<br/>@ParallelAgent: logs + metrics + deploy"]
+        C["/conditional · SeverityRouter<br/>@ConditionalAgent → DeepDiagnosis / LightTriage"]
+        LP["/loop · DiagnosticLoopAgent<br/>@LoopAgent + @ErrorHandler, exit when score ≥ 0.8"]
+        CM["/commander · IncidentCommander<br/>@SupervisorAgent → DB · K8s · Network · Cache"]
+    end
+
+    subgraph L3["Layer 3 - IncidentResponseFlow (durable · HITL · event-driven)"]
+        direction TB
+        D["function: agenticDiagnosis<br/>(Layer 2 pipeline as a Flow task)"]
+        M["get: fetchMetrics<br/>→ MetricsSnapshot, withLiveMetrics"]
+        SW{"remediation<br/>destructive?"}
+        AP["emit: approval.required"]
+        WAIT["listen: waitSREApproval"]
+        DEC{"approved?"}
+        EX["post: executeRemediation"]
+        SL["post: notifySlack"]
+        PM["agent: postMortem<br/>withPostMortem"]
+        RES["emit: incidentResolved"]
+        REJ["function: remediationRejected"]
+        RSL["post: notifyRejectionSlack"]
+        FIN(["END"])
+
+        D --> M --> SW
+        SW -- yes --> AP --> WAIT --> DEC
+        SW -- no --> EX
+        DEC -- approved --> EX
+        DEC -- rejected --> REJ --> RSL --> FIN
+        EX --> SL --> PM --> RES
+    end
 ```
-Alert Input
-   |
-   +--> Layer 1: IncidentAnalyzer (@RegisterAiService)          single AI call, structured output
-   |
-   +--> Layer 2: agentic patterns (each one level deep)
-   |       /parallel    EvidenceGatherer        @ParallelAgent  (logs + metrics + deploy)
-   |       /conditional SeverityRouter           @ConditionalAgent -> DeepDiagnosis | LightTriage
-   |       /loop        DiagnosticLoopAgent       @LoopAgent (+ @ErrorHandler), exit when score >= 0.8
-   |       /commander   IncidentCommander         @SupervisorAgent -> {DB, K8s, Network, Cache} specialists
-   |
-   +--> Layer 3: IncidentResponseFlow (extends Flow)            durable, HITL, event-driven
-           function(agenticDiagnosis)   <- Layer 2 pipeline as a Flow task
-             -> get(prometheus) -> switch(destructive?)
-                  yes -> emit(approval.required) -> listen(approval.done)
-                           approved? -> post(deploy) -> post(slack) -> agent(postMortem) -> emit(resolved)
-                           rejected? -> function(rejected) -> post(slack) -> END
-                  no  -> post(deploy) -> post(slack) -> agent(postMortem) -> emit(resolved)
-```
+
+The terminal/HITL state of the Layer 3 workflow is projected back onto the `Incident` JPA record (via `flow-out` CloudEvents) so `GET /incidents/{id}` stays consistent with the live console.
 
 ## Project structure
 
 ```
 src/main/java/com/acme/sre/
 ├── ai/
-│   ├── triage/IncidentAnalyzer            Layer 1 — single @RegisterAiService
-│   ├── diagnostics/                       Layer 2 — agentic patterns + leaf agents
+│   ├── triage/IncidentAnalyzer            Layer 1 - single @RegisterAiService
+│   ├── diagnostics/                       Layer 2 - agentic patterns + leaf agents
 │   │   ├── EvidenceGatherer (@ParallelAgent), LogsAnalysisAgent, MetricsAnalysisAgent, DeployHistoryAgent
 │   │   ├── SeverityRouter (@ConditionalAgent), DeepDiagnosisAgent, LightTriageAgent, …
 │   │   ├── DiagnosticLoopAgent (@LoopAgent + @ErrorHandler), DiagnosticAgent, RemediationAgent, ConfidenceScorer
 │   │   ├── SeverityClassifier
 │   │   └── IncidentDiagnosisService        plain CDI orchestration used by the Flow task
-│   ├── commander/                         Layer 2 — @SupervisorAgent + 4 domain specialists
-│   ├── response/WorkflowPostMortemAgent   Layer 3 — post-mortem agent (a Flow task)
+│   ├── commander/                         Layer 2 - @SupervisorAgent + 4 domain specialists
+│   ├── response/WorkflowPostMortemAgent   Layer 3 - post-mortem agent (a Flow task)
 │   └── support/                           lenient JSON hardening (ConfidenceScore deser) for agentic/Flow paths
-├── flow/IncidentResponseFlow              Layer 3 — the durable Workflow descriptor
-├── api/IncidentResource                   REST API (alert / parallel / conditional / loop / commander / workflow / approve / reject / get)
-├── messaging/                             IncidentEventBridge + IncidentDashboardSocket (live console)
-└── domain/                                records & JPA entities (Alert, Incident, IncidentResult, …)
+├── flow/IncidentResponseFlow              Layer 3 - the durable Workflow descriptor
+├── api/                                   REST boundary
+│   ├── IncidentResource                   endpoints (alert / parallel / conditional / loop / commander / workflow / approve / reject / get), returns typed DTOs
+│   ├── dto/                               response DTOs + IncidentView (entity never exposed) + ApiError
+│   └── ApiException · IncidentNotFoundException · WorkflowNotActiveException · ApiExceptionMapper
+├── messaging/                             IncidentEventBridge + IncidentDashboardSocket (live console) + IncidentProjectionUpdater + ApprovalEventPublisher (HITL CloudEvent)
+└── domain/                                domain types, split by role
+    ├── model/                             JPA entities + enums (Alert, Incident, Severity, ActionType, IncidentStatus)
+    ├── diagnosis/                         agentic value objects (Diagnosis, Evidence, RemediationAction, ConfidenceScore, IncidentResult, MetricsSnapshot, …)
+    └── contract/                          boundary payloads (AlertInput, TriagePrompt, ApprovalResponse, SlackMessage/SlackAck, RemediationCommand/Rejection)
 src/main/resources/
 ├── application.properties                 LLM, datasource, Flow persistence + exclude-workflows, Kafka channels
 └── META-INF/resources/{index,console}.html  landing page + the all-layers live console
@@ -222,6 +255,10 @@ docker-compose.yml                         optional persistent Postgres
 - **Quarkus** 3.36.0 (Java 25)
 - **Quarkus LangChain4j** 1.11.0.CR1 (Agentic; OpenAI/NVIDIA + Ollama providers)
 - **Quarkus Flow** 0.10.0 (`mvstore` persistence, `messaging`, `langchain4j`)
+- **Quarkus REST** (`rest-jackson`, the reactive stack) - typed DTO endpoints + exception mapper
+- **Hibernate ORM with Panache** on **PostgreSQL** - the `Incident`/`Alert` read model
+- **SmallRye Reactive Messaging (Kafka)** + **CloudEvents** - the event bus (`flow-in` / `flow-out` / `flow-lifecycle-out`)
+- **WebSockets** - the live console feed
 - **PostgreSQL**, **Kafka/Redpanda**, **WireMock** - all via Dev Services
 - **Ollama** (optional, `ollama` profile) for fully-local runs
 

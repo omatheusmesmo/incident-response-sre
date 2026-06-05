@@ -1,4 +1,4 @@
-package com.acme.sre.domain;
+package com.acme.sre.domain.model;
 
 import java.math.BigDecimal;
 import java.time.Instant;

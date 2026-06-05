@@ -1,6 +1,6 @@
 package com.acme.sre;
 
-import com.acme.sre.domain.ConfidenceScore;
+import com.acme.sre.domain.diagnosis.ConfidenceScore;
 
 import org.junit.jupiter.api.Test;
 

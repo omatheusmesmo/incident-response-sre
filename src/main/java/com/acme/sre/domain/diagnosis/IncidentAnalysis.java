@@ -1,4 +1,6 @@
-package com.acme.sre.domain;
+package com.acme.sre.domain.diagnosis;
+
+import com.acme.sre.domain.model.Severity;
 
 public record IncidentAnalysis(
         Severity severity,

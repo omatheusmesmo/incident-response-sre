@@ -1,9 +1,9 @@
 package com.acme.sre.messaging;
 
-import com.acme.sre.domain.ActionType;
-import com.acme.sre.domain.Incident;
-import com.acme.sre.domain.IncidentStatus;
-import com.acme.sre.domain.Severity;
+import com.acme.sre.domain.model.ActionType;
+import com.acme.sre.domain.model.Incident;
+import com.acme.sre.domain.model.IncidentStatus;
+import com.acme.sre.domain.model.Severity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -60,6 +60,9 @@ public class IncidentProjectionUpdater {
             JsonNode score = result.get("confidenceScore");
             if (score != null && score.hasNonNull("score")) {
                 incident.confidenceScore = score.get("score").asDouble();
+            }
+            if (result.hasNonNull("postMortemSummary")) {
+                incident.postMortemSummary = result.get("postMortemSummary").asText();
             }
         }
         incident.status = status;

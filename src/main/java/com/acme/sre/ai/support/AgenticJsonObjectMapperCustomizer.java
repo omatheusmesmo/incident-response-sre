@@ -1,7 +1,7 @@
 package com.acme.sre.ai.support;
 
-import com.acme.sre.domain.ConfidenceScore;
-import com.acme.sre.domain.ConfidenceScoreDeserializer;
+import com.acme.sre.domain.diagnosis.ConfidenceScore;
+import com.acme.sre.domain.diagnosis.ConfidenceScoreDeserializer;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;

@@ -1,9 +1,9 @@
 package com.acme.sre;
 
-import com.acme.sre.domain.ActionType;
-import com.acme.sre.domain.Incident;
-import com.acme.sre.domain.IncidentStatus;
-import com.acme.sre.domain.Severity;
+import com.acme.sre.domain.model.ActionType;
+import com.acme.sre.domain.model.Incident;
+import com.acme.sre.domain.model.IncidentStatus;
+import com.acme.sre.domain.model.Severity;
 import com.acme.sre.messaging.IncidentProjectionUpdater;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +41,8 @@ class IncidentProjectionUpdaterTest {
               "severity": "P2_HIGH",
               "diagnosis": {"rootCause": "memory leak", "explanation": "cache never evicted"},
               "remediation": {"type": "RESTART_POD", "description": "restart pod", "destructive": true, "targetService": "api-gateway"},
-              "confidenceScore": {"score": 0.83, "reasoning": "", "sufficient": true}
+              "confidenceScore": {"score": 0.83, "reasoning": "", "sufficient": true},
+              "postMortemSummary": "Heap exhausted after v2.3; restarted pod; add eviction policy."
             }
             """);
 
@@ -55,6 +56,7 @@ class IncidentProjectionUpdaterTest {
         assertEquals(ActionType.RESTART_POD, reloaded.remediationType);
         assertEquals(true, reloaded.remediationDestructive);
         assertEquals(0.83, reloaded.confidenceScore, 1e-9);
+        assertEquals("Heap exhausted after v2.3; restarted pod; add eviction policy.", reloaded.postMortemSummary);
     }
 
     @Test

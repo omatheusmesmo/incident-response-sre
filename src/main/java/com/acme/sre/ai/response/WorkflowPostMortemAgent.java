@@ -1,6 +1,6 @@
 package com.acme.sre.ai.response;
 
-import com.acme.sre.domain.IncidentResult;
+import com.acme.sre.domain.diagnosis.IncidentResult;
 
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
@@ -28,6 +28,7 @@ public interface WorkflowPostMortemAgent {
             Diagnosis: {incident.diagnosis.rootCause} - {incident.diagnosis.explanation}
             Remediation: {incident.remediation.type} - {incident.remediation.description}
             Confidence: {incident.confidenceScore}
+            Live metrics at remediation: CPU {incident.liveMetrics.cpuUsage}%, memory {incident.liveMetrics.memoryUsage}%, error rate {incident.liveMetrics.errorRate}%, p99 {incident.liveMetrics.latencyP99}ms
 
             Write the post-mortem.
             """)

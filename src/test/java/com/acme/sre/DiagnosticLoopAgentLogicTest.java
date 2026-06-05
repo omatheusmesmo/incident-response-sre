@@ -1,7 +1,7 @@
 package com.acme.sre;
 
 import com.acme.sre.ai.diagnostics.DiagnosticLoopAgent;
-import com.acme.sre.domain.Severity;
+import com.acme.sre.domain.model.Severity;
 
 import dev.langchain4j.agentic.agent.AgentInvocationException;
 import dev.langchain4j.agentic.agent.ErrorContext;

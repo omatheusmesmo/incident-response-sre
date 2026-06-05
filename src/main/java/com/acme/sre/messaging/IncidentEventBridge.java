@@ -9,7 +9,7 @@ import io.smallrye.common.annotation.Blocking;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
-import com.acme.sre.domain.IncidentStatus;
+import com.acme.sre.domain.model.IncidentStatus;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.core.provider.EventFormatProvider;
@@ -18,7 +18,7 @@ import io.cloudevents.jackson.JsonFormat;
 /**
  * Consumes the Flow {@code flow-out} topic (CloudEvents emitted by the incident workflow),
  * forwards incident events to connected dashboards via {@link IncidentDashboardSocket}, and
- * projects the workflow's terminal/HITL state back onto the {@link com.acme.sre.domain.Incident}
+ * projects the workflow's terminal/HITL state back onto the {@link com.acme.sre.domain.model.Incident}
  * record via {@link IncidentProjectionUpdater}.
  */
 @ApplicationScoped

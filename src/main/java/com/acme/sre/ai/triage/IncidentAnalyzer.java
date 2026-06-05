@@ -1,6 +1,6 @@
 package com.acme.sre.ai.triage;
 
-import com.acme.sre.domain.IncidentAnalysis;
+import com.acme.sre.domain.diagnosis.IncidentAnalysis;
 
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;

@@ -5,13 +5,15 @@ import java.util.UUID;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import com.acme.sre.domain.ConfidenceScore;
-import com.acme.sre.domain.Diagnosis;
-import com.acme.sre.domain.Evidence;
-import com.acme.sre.domain.IncidentResult;
-import com.acme.sre.domain.RemediationAction;
-import com.acme.sre.domain.Severity;
-import com.acme.sre.domain.TriagePrompt;
+import org.jboss.logging.Logger;
+
+import com.acme.sre.domain.diagnosis.ConfidenceScore;
+import com.acme.sre.domain.diagnosis.Diagnosis;
+import com.acme.sre.domain.diagnosis.Evidence;
+import com.acme.sre.domain.diagnosis.IncidentResult;
+import com.acme.sre.domain.diagnosis.RemediationAction;
+import com.acme.sre.domain.model.Severity;
+import com.acme.sre.domain.contract.TriagePrompt;
 
 import dev.langchain4j.agentic.scope.AgenticScope;
 
@@ -28,6 +30,8 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 @ApplicationScoped
 public class IncidentDiagnosisService {
 
+    private static final Logger LOG = Logger.getLogger(IncidentDiagnosisService.class);
+
     @Inject
     SeverityClassifier severityClassifier;
 
@@ -39,16 +43,33 @@ public class IncidentDiagnosisService {
 
     public IncidentResult diagnose(TriagePrompt alert) {
         String memoryId = alert.incidentId() != null ? alert.incidentId() : UUID.randomUUID().toString();
+        LOG.infof("[L3:diagnose] agentic pipeline start | incident=%s service=%s metric=%s",
+                memoryId, alert.service(), alert.metric());
 
         Severity severity = severityClassifier.classify(
                 alert.message(), alert.service(), alert.metric(), alert.value());
+        LOG.infof("[L3:diagnose] classified | incident=%s severity=%s path=%s",
+                memoryId, severity, isDeep(severity) ? "deep" : "light");
+
         Evidence evidence = evidenceGatherer.gather(
                 memoryId, alert.service(), alert.message(), alert.metric(), alert.value());
+        LOG.infof("[L3:diagnose] evidence gathered | incident=%s", memoryId);
+
         var routed = severityRouter.route(memoryId,
                 alert.service(), alert.message(), alert.metric(), alert.value(),
                 severity, evidence.toPromptText());
 
-        return fromScope(routed.agenticScope(), severity);
+        IncidentResult result = fromScope(routed.agenticScope(), severity);
+        LOG.infof("[L3:diagnose] pipeline done | incident=%s severity=%s rootCause=%s remediation=%s destructive=%s",
+                memoryId, result.severity(),
+                result.diagnosis() != null ? result.diagnosis().rootCause() : null,
+                result.remediation() != null ? result.remediation().type() : null,
+                result.isRemediationDestructive());
+        return result;
+    }
+
+    private static boolean isDeep(Severity severity) {
+        return severity == Severity.P1_CRITICAL || severity == Severity.P2_HIGH;
     }
 
     public static IncidentResult fromScope(AgenticScope scope, Severity fallbackSeverity) {
@@ -57,6 +78,6 @@ public class IncidentDiagnosisService {
         RemediationAction remediation = scope.readState("remediation", (RemediationAction) null);
         String score = scope.readState("score", "");
         return new IncidentResult(severity, diagnosis, remediation, ConfidenceScore.parse(score),
-                "Post-incident summary is produced by the durable workflow (Layer 3).");
+                null, null);
     }
 }

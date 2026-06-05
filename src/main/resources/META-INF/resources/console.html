@@ -167,9 +167,9 @@ const L2 = {
 const L3 = {
   degradation: {
     label:"Service degradation", path:"auto", pathLabel:"AUTO-EXECUTE",
-    what:"Triage usually proposes a SAFE action → runs straight through, no approval.",
-    payload:{source:"prometheus", service:"api-gateway", metric:"cpu_usage", value:95, threshold:80,
-      message:"Pod api-gateway-7d8f2 restart loop. CPU 95%, memory 89%. Error rate 12% on /api/v2/users"}
+    what:"Triage proposes a SAFE action (scale up) → runs straight through, no approval.",
+    payload:{source:"prometheus", service:"recommendations-api", metric:"latency_p99", value:780, threshold:500,
+      message:"recommendations-api p99 latency 780ms over 500ms SLO during a traffic surge. CPU 74%, memory 61%, error rate 0.3%, no crashes or restarts, no recent deploy. Gradual capacity-bound slowdown."}
   },
   deadlock: {
     label:"Hung service", path:"hitl", pathLabel:"NEEDS APPROVAL",
