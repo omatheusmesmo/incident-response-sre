@@ -1,6 +1,5 @@
 package com.acme.sre.flow;
 
-import io.quarkiverse.flow.dsl.FlowDSL;
 import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,6 +21,9 @@ import io.serverlessworkflow.api.types.Workflow;
 import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import static io.quarkiverse.flow.dsl.FlowDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
 
 
 @ApplicationScoped
@@ -52,55 +54,55 @@ public class IncidentResponseFlow extends Flow {
                                 + "live metrics enrichment, approval gate for destructive remediation, "
                                 + "remediation execution, Slack notification, and an agentic post-mortem."))
                 .tasks(
-                        FlowDSL.function("agenticDiagnosis", diagnosisService::diagnose, TriagePrompt.class)
+                        function("agenticDiagnosis", diagnosisService::diagnose, TriagePrompt.class)
                                 .exportAsTaskOutput(),
 
-                        FlowDSL.get("fetchMetrics", prometheusUrl)
+                        get("fetchMetrics", prometheusUrl)
                                 .outputAs((MetricsSnapshot live, WorkflowContextData wf, TaskContextData tf) ->
                                                 diagnosed(wf).withLiveMetrics(live),
                                         MetricsSnapshot.class)
                                 .exportAsTaskOutput(),
 
-                        FlowDSL.switchWhenOrElse(
+                        switchWhenOrElse(
                                 (IncidentResult ir) -> ir.isRemediationDestructive(),
                                 "requestApproval", "executeRemediation",
                                 IncidentResult.class),
 
-                        FlowDSL.emitJson("requestApproval", "com.acme.sre.incident.approval.required", IncidentResult.class),
+                        emitJson("requestApproval", "com.acme.sre.incident.approval.required", IncidentResult.class),
 
-                        FlowDSL.listen("waitSREApproval",
-                                FlowDSL.toOne(FlowDSL.consumed("com.acme.sre.incident.approval.done")
+                        listen("waitSREApproval",
+                                toOne(consumed("com.acme.sre.incident.approval.done")
                                         .extensionByInstanceId("flowinstanceid"))),
 
-                        FlowDSL.switchWhenOrElse(
+                        switchWhenOrElse(
                                 (ApprovalResponse ar) -> ar.approved(),
                                 "executeRemediation", "remediationRejected",
                                 ApprovalResponse.class),
 
-                        FlowDSL.function("remediationRejected", RemediationRejection::from, ApprovalResponse.class)
+                        function("remediationRejected", RemediationRejection::from, ApprovalResponse.class)
                                 .then("notifyRejectionSlack"),
 
-                        FlowDSL.post("notifyRejectionSlack",
+                        post("notifyRejectionSlack",
                                 new SlackMessage("#sre-alerts", "Remediation rejected by SRE"),
                                 slackWebhookUrl)
                                 .then(FlowDirectiveEnum.END),
 
-                        FlowDSL.post("executeRemediation",
+                        post("executeRemediation",
                                 new RemediationCommand("Executing approved remediation", null, null),
                                 deploymentApiUrl),
 
-                        FlowDSL.post("notifySlack",
+                        post("notifySlack",
                                 new SlackMessage("#sre-alerts", "Incident remediation executed successfully"),
                                 slackWebhookUrl)
                                 .outputAs((SlackAck ack, WorkflowContextData wf, TaskContextData tf) -> diagnosed(wf),
                                         SlackAck.class),
 
-                        FlowDSL.agent("postMortemAgent", postMortemAgent::generate, IncidentResult.class)
+                        agent("postMortemAgent", postMortemAgent::generate, IncidentResult.class)
                                 .outputAs((String summary, WorkflowContextData wf, TaskContextData tf) ->
                                                 diagnosed(wf).withPostMortem(summary),
                                         String.class),
 
-                        FlowDSL.emitJson("incidentResolved", "com.acme.sre.incident.resolved", IncidentResult.class))
+                        emitJson("incidentResolved", "com.acme.sre.incident.resolved", IncidentResult.class))
                 .build();
     }
 
