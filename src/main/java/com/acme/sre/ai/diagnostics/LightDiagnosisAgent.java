@@ -7,9 +7,7 @@ import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface LightDiagnosisAgent {
 
     @Agent(description = "Quick root-cause assessment for low-severity incidents", outputKey = "diagnosis")

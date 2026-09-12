@@ -7,9 +7,7 @@ import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface ConfidenceScorer {
 
     @Agent(description = "Scores confidence in the diagnosis and remediation from 0.0 to 1.0", outputKey = "score")

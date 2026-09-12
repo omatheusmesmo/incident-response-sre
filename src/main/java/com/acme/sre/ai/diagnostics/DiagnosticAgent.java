@@ -7,9 +7,7 @@ import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface DiagnosticAgent {
 
     @Agent(description = "Diagnoses the root cause of an incident, correlating evidence gathered in parallel", outputKey = "diagnosis")

@@ -5,9 +5,7 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.ModelName;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface CacheSpecialist {
 
     @Agent(description = "Caching specialist. Use for incidents about low cache hit-rate, mass eviction, cache stampede, "

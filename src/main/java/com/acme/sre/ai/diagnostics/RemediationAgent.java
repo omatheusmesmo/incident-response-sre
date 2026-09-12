@@ -8,9 +8,7 @@ import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface RemediationAgent {
 
     @Agent(description = "Suggests a remediation action for the diagnosed incident", outputKey = "remediation")

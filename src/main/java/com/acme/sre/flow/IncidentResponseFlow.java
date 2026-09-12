@@ -1,5 +1,6 @@
 package com.acme.sre.flow;
 
+import io.quarkiverse.flow.dsl.FlowWorkflowBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -17,20 +18,20 @@ import com.acme.sre.domain.diagnosis.MetricsSnapshot;
 import io.quarkiverse.flow.Flow;
 import io.serverlessworkflow.api.types.FlowDirectiveEnum;
 import io.serverlessworkflow.api.types.Workflow;
-import io.serverlessworkflow.fluent.func.FuncWorkflowBuilder;
 import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.agent;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.consumed;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.emitJson;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.function;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.get;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.listen;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.post;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.switchWhenOrElse;
-import static io.serverlessworkflow.fluent.func.dsl.FuncDSL.toOne;
+import static io.quarkiverse.flow.dsl.FlowDSL.agent;
+import static io.quarkiverse.flow.dsl.FlowDSL.consumed;
+import static io.quarkiverse.flow.dsl.FlowDSL.emitJson;
+import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.get;
+import static io.quarkiverse.flow.dsl.FlowDSL.listen;
+import static io.quarkiverse.flow.dsl.FlowDSL.post;
+import static io.quarkiverse.flow.dsl.FlowDSL.switchWhenOrElse;
+import static io.quarkiverse.flow.dsl.FlowDSL.toOne;
+
 
 @ApplicationScoped
 public class IncidentResponseFlow extends Flow {
@@ -52,9 +53,9 @@ public class IncidentResponseFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FuncWorkflowBuilder.workflow("incident-response")
+        return FlowWorkflowBuilder.workflow("incident-response", "org-acme", "1.0.0")
                 .document(doc -> doc
-                        .namespace(getClass().getPackageName())
+                        .namespace("org-acme")
                         .title("Incident Response")
                         .summary("Durable, human-gated incident response: agentic diagnosis, "
                                 + "live metrics enrichment, approval gate for destructive remediation, "
@@ -70,7 +71,7 @@ public class IncidentResponseFlow extends Flow {
                                 .exportAsTaskOutput(),
 
                         switchWhenOrElse(
-                                (IncidentResult ir) -> ir.isRemediationDestructive(),
+                                IncidentResult::isRemediationDestructive,
                                 "requestApproval", "executeRemediation",
                                 IncidentResult.class),
 
@@ -81,7 +82,7 @@ public class IncidentResponseFlow extends Flow {
                                         .extensionByInstanceId("flowinstanceid"))),
 
                         switchWhenOrElse(
-                                (ApprovalResponse ar) -> ar.approved(),
+                                ApprovalResponse::approved,
                                 "executeRemediation", "remediationRejected",
                                 ApprovalResponse.class),
 
