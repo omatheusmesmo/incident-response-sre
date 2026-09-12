@@ -6,9 +6,7 @@ import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface SeverityClassifier {
 
     @Agent(description = "Classifies incident severity from P1_CRITICAL (critical) to P4_LOW (low)", outputKey = "severity")

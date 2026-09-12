@@ -1,19 +1,29 @@
 package com.acme.sre.messaging;
 
 import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.cloudevents.CloudEventData;
+import io.cloudevents.core.builder.CloudEventBuilder;
+import io.cloudevents.core.data.BytesCloudEventData;
+import io.smallrye.reactive.messaging.ce.CloudEventMetadata;
+import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import io.smallrye.common.annotation.Blocking;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import com.acme.sre.domain.model.IncidentStatus;
 
 import io.cloudevents.CloudEvent;
-import io.cloudevents.core.provider.EventFormatProvider;
-import io.cloudevents.jackson.JsonFormat;
 
 /**
  * Consumes the Flow {@code flow-out} topic (CloudEvents emitted by the incident workflow),
@@ -25,21 +35,17 @@ import io.cloudevents.jackson.JsonFormat;
 public class IncidentEventBridge {
 
     private static final Logger LOG = Logger.getLogger(IncidentEventBridge.class);
-    private static final JsonFormat CE_JSON = (JsonFormat) EventFormatProvider.getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE);
-    private static final String INCIDENT_EVENT_PREFIX = "com.acme.sre.incident.";
 
     @Inject
     IncidentProjectionUpdater projectionUpdater;
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @Incoming("flow-out-incoming")
-    @Blocking
-    public void onFlowOut(byte[] record) {
+    public CompletionStage<Void> onFlowOut(Message<String> msg) {
         try {
-            CloudEvent ce = CE_JSON.deserialize(record);
-            if (ce == null || ce.getType() == null || !ce.getType().startsWith(INCIDENT_EVENT_PREFIX)) {
-                return;
-            }
+            CloudEvent ce = resolveCloudEvent(msg);
 
             Object instanceId = ce.getExtension("flowinstanceid");
             byte[] data = ce.getData() != null ? ce.getData().toBytes() : null;
@@ -55,6 +61,8 @@ public class IncidentEventBridge {
         } catch (Exception e) {
             LOG.error("Failed to forward flow-out event to dashboard", e);
         }
+        // for demo purpose we ever ack the message
+        return msg.ack();
     }
 
     private void projectIncident(String type, Object instanceId, byte[] data) {
@@ -68,14 +76,11 @@ public class IncidentEventBridge {
             return;
         }
         try {
-            projectionUpdater.apply(instanceId.toString(), status, MAPPER.readTree(data));
+            projectionUpdater.apply(instanceId.toString(), status, objectMapper.readTree(data));
         } catch (Exception e) {
             LOG.warnf(e, "Could not project incident state for instance %s", instanceId);
         }
     }
-
-    private static final com.fasterxml.jackson.databind.ObjectMapper MAPPER =
-            new com.fasterxml.jackson.databind.ObjectMapper();
 
     /**
      * Consumes Flow lifecycle events (workflow/task started/completed, types prefixed
@@ -84,18 +89,16 @@ public class IncidentEventBridge {
      * workflow events carry {@code data.name}.
      */
     @Incoming("flow-lifecycle-incoming")
-    public void onLifecycle(byte[] record) {
+    public CompletionStage<Void> onLifecycle(Message<String> msg) {
         try {
-            CloudEvent ce = CE_JSON.deserialize(record);
-            if (ce == null || ce.getType() == null || !ce.getType().startsWith("io.serverlessworkflow.")
-                    || ce.getData() == null) {
-                return;
-            }
-            com.fasterxml.jackson.databind.JsonNode data = MAPPER.readTree(ce.getData().toBytes());
+            CloudEvent ce = resolveCloudEvent(msg);
+
+            JsonNode data = objectMapper.readTree(ce.getData().toBytes());
+
             String instanceId = data.hasNonNull("workflow") ? data.get("workflow").asText()
                     : (data.hasNonNull("name") ? data.get("name").asText() : null);
             if (instanceId == null) {
-                return;
+                return msg.ack();
             }
             String task = data.hasNonNull("task") ? data.get("task").asText() : null;
 
@@ -106,9 +109,62 @@ public class IncidentEventBridge {
         } catch (Exception e) {
             LOG.error("Failed to forward lifecycle event to dashboard", e);
         }
+
+        return msg.ack();
     }
 
     private static String jsonString(Object value) {
         return value == null ? "null" : "\"" + value.toString().replace("\"", "\\\"") + "\"";
+    }
+
+    private static CloudEvent resolveCloudEvent(Message<?> msg) {
+        CloudEventMetadata<?> meta = (CloudEventMetadata<?>) msg
+                .getMetadata(CloudEventMetadata.class)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Message does not carry CloudEvent metadata. "
+                                + "Ensure the channel has cloud-events enabled (the default)."));
+
+        CloudEventBuilder builder = CloudEventBuilder.v1()
+                .withId(meta.getId())
+                .withSource(meta.getSource())
+                .withType(meta.getType());
+
+        meta.getDataContentType().ifPresent(builder::withDataContentType);
+        meta.getDataSchema().ifPresent(builder::withDataSchema);
+        meta.getSubject().ifPresent(builder::withSubject);
+        meta.getTimeStamp()
+                .map(ZonedDateTime::toOffsetDateTime)
+                .ifPresent(builder::withTime);
+
+        for (Map.Entry<String, Object> ext : meta.getExtensions().entrySet()) {
+            Object val = ext.getValue();
+            if (val instanceof String s) {
+                builder.withExtension(ext.getKey(), s);
+            } else if (val instanceof Number n) {
+                builder.withExtension(ext.getKey(), n);
+            } else if (val instanceof Boolean b) {
+                builder.withExtension(ext.getKey(), b);
+            } else if (val != null) {
+                builder.withExtension(ext.getKey(), val.toString());
+            }
+        }
+
+        Object data = meta.getData();
+        if (data == null) {
+            data = msg.getPayload();
+        }
+        if (data instanceof byte[] bytes) {
+            builder.withData(bytes);
+        } else if (data instanceof CloudEventData cloudEventData) {
+            builder.withData(cloudEventData);
+        } else if (data instanceof String text) {
+            builder.withData(text.getBytes(StandardCharsets.UTF_8));
+        } else if (data instanceof JsonObject jsonObject) {
+            builder.withData(jsonObject.encode().getBytes(StandardCharsets.UTF_8));
+        } else if (data != null) {
+            builder.withData(BytesCloudEventData.wrap(data.toString().getBytes(StandardCharsets.UTF_8)));
+        }
+
+        return builder.build();
     }
 }

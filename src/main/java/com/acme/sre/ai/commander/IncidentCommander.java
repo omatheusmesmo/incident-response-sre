@@ -4,9 +4,7 @@ import dev.langchain4j.agentic.declarative.SupervisorAgent;
 import dev.langchain4j.agentic.declarative.SupervisorRequest;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface IncidentCommander {
 
     @SupervisorAgent(

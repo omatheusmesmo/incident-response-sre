@@ -13,10 +13,10 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.36.0</quarkus.platform.version>
+    <quarkus.platform.version>3.39.2</quarkus.platform.version>
     <skipITs>true</skipITs>
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
-    <quarkus-langchain4j.version>1.11.0.CR1</quarkus-langchain4j.version>
+    <quarkus-langchain4j.version>1.13.1</quarkus-langchain4j.version>
     <quarkus-flow.version>1.1.0</quarkus-flow.version>
   </properties>
 
@@ -39,7 +39,7 @@
       <dependency>
         <groupId>io.quarkiverse.flow</groupId>
         <artifactId>quarkus-flow-bom</artifactId>
-        <version>1.1.0</version>
+        <version>${quarkus-flow.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -89,7 +89,6 @@
     <dependency>
       <groupId>io.quarkiverse.flow</groupId>
       <artifactId>quarkus-flow-langchain4j</artifactId>
-      <version>${quarkus-flow.version}</version>
     </dependency>
     <!--
       Durable Flow persistence: MVStore (file-based, survives restarts).

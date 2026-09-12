@@ -22,8 +22,15 @@ import io.serverlessworkflow.impl.TaskContextData;
 import io.serverlessworkflow.impl.WorkflowContextData;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import static io.quarkiverse.flow.dsl.FlowDSL.*;
+import static io.quarkiverse.flow.dsl.FlowDSL.agent;
+import static io.quarkiverse.flow.dsl.FlowDSL.consumed;
+import static io.quarkiverse.flow.dsl.FlowDSL.emitJson;
 import static io.quarkiverse.flow.dsl.FlowDSL.function;
+import static io.quarkiverse.flow.dsl.FlowDSL.get;
+import static io.quarkiverse.flow.dsl.FlowDSL.listen;
+import static io.quarkiverse.flow.dsl.FlowDSL.post;
+import static io.quarkiverse.flow.dsl.FlowDSL.switchWhenOrElse;
+import static io.quarkiverse.flow.dsl.FlowDSL.toOne;
 
 
 @ApplicationScoped
@@ -46,9 +53,9 @@ public class IncidentResponseFlow extends Flow {
 
     @Override
     public Workflow descriptor() {
-        return FlowWorkflowBuilder.workflow("incident-response")
+        return FlowWorkflowBuilder.workflow("incident-response", "org-acme", "1.0.0")
                 .document(doc -> doc
-                        .namespace(getClass().getPackageName())
+                        .namespace("org-acme")
                         .title("Incident Response")
                         .summary("Durable, human-gated incident response: agentic diagnosis, "
                                 + "live metrics enrichment, approval gate for destructive remediation, "
@@ -64,7 +71,7 @@ public class IncidentResponseFlow extends Flow {
                                 .exportAsTaskOutput(),
 
                         switchWhenOrElse(
-                                (IncidentResult ir) -> ir.isRemediationDestructive(),
+                                IncidentResult::isRemediationDestructive,
                                 "requestApproval", "executeRemediation",
                                 IncidentResult.class),
 
@@ -75,7 +82,7 @@ public class IncidentResponseFlow extends Flow {
                                         .extensionByInstanceId("flowinstanceid"))),
 
                         switchWhenOrElse(
-                                (ApprovalResponse ar) -> ar.approved(),
+                                ApprovalResponse::approved,
                                 "executeRemediation", "remediationRejected",
                                 ApprovalResponse.class),
 

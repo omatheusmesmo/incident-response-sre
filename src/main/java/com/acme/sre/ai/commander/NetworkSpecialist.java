@@ -5,9 +5,7 @@ import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 import io.quarkiverse.langchain4j.ModelName;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface NetworkSpecialist {
 
     @Agent(description = "Network specialist. Use for incidents about elevated latency, DNS resolution failures, "

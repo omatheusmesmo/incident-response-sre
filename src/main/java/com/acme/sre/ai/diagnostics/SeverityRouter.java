@@ -7,9 +7,7 @@ import dev.langchain4j.agentic.declarative.ConditionalAgent;
 import dev.langchain4j.agentic.scope.ResultWithAgenticScope;
 import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.V;
-import io.quarkiverse.langchain4j.RegisterAiService;
 
-@RegisterAiService
 public interface SeverityRouter {
 
     @ConditionalAgent(
