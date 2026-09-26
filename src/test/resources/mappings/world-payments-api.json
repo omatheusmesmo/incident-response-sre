@@ -1,0 +1,104 @@
+{
+  "mappings": [
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/prometheus/query",
+        "queryParameters": {
+          "service": {
+            "equalTo": "payments-api"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "service": "payments-api",
+          "cpuUsage": 88.0,
+          "memoryUsage": 97.0,
+          "errorRate": 4.2,
+          "latencyP99": 2400.0,
+          "rawQuery": "rate(http_requests_total{service=\"payments-api\",status=~\"5..\"}[5m])"
+        }
+      }
+    },
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/logs",
+        "queryParameters": {
+          "service": {
+            "equalTo": "payments-api"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "timestamp": "2026-09-26T14:07:12Z",
+            "level": "ERROR",
+            "logger": "c.a.payments.idempotency.IdempotencyCache",
+            "message": "java.lang.OutOfMemoryError: Java heap space at IdempotencyCache.put(IdempotencyCache.java:41)"
+          },
+          {
+            "timestamp": "2026-09-26T14:06:50Z",
+            "level": "WARN",
+            "logger": "gc",
+            "message": "G1 Evacuation Pause 1.8s, heap after GC 96% (1.94G/2.0G)"
+          },
+          {
+            "timestamp": "2026-09-26T14:05:02Z",
+            "level": "INFO",
+            "logger": "c.a.payments.idempotency.IdempotencyCache",
+            "message": "idempotency cache size=1,912,334 entries (no eviction configured)"
+          }
+        ]
+      }
+    },
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/deployments",
+        "queryParameters": {
+          "service": {
+            "equalTo": "payments-api"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "service": "payments-api",
+            "version": "v2.3.0",
+            "deployedAt": "2026-09-26T14:00:00Z",
+            "author": "team-payments-api",
+            "type": "DEPLOY",
+            "change": "Added in-memory IdempotencyCache (ConcurrentHashMap) for POST /charges, entries never expire"
+          },
+          {
+            "service": "payments-api",
+            "version": "v2.2.9",
+            "deployedAt": "2026-09-20T16:05:00Z",
+            "author": "team-payments-api",
+            "type": "DEPLOY",
+            "change": "Logging improvements"
+          }
+        ]
+      }
+    }
+  ]
+}

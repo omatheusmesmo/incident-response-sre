@@ -1,0 +1,63 @@
+/* Design tokens shared by every page. Mirrors the talk deck (mcruzdev/talks): Red Hat type,
+   Quarkus blue/red/dark and the white to #dbe9f8 slide background. */
+@import url("https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700;900&family=Red+Hat+Text:wght@400;500;700&family=Red+Hat+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --blue: #4695eb;
+  --red: #ff004a;
+  --dark: #0d1c2c;
+  --ink: #2b3a4b;
+  --muted: #5b6b7d;
+  --faint: #9aa7b5;
+  --line: rgba(13, 28, 44, .12);
+  --surface: #fff;
+  --code-bg: #f6f8fa;
+  --ok: #1f9d6b;
+  --warn: #e08a00;
+  --grad: linear-gradient(90deg, var(--blue), var(--red));
+  --page: linear-gradient(to bottom, #fff, #dbe9f8);
+  --shadow: 0 2px 12px rgba(13, 28, 44, .08);
+  --shadow-lg: 0 10px 30px rgba(13, 28, 44, .14);
+
+  --font-display: "Red Hat Display", system-ui, sans-serif;
+  --font-text: "Red Hat Text", system-ui, sans-serif;
+  --font-mono: "Red Hat Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: #dbe9f8; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--page) fixed;
+  color: var(--dark);
+  font: 15px/1.55 var(--font-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--blue); }
+
+.grad-text {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.grad-bar {
+  display: block;
+  height: 4px;
+  width: 56px;
+  border-radius: 4px;
+  background: var(--grad);
+}
+
+code, pre, .mono { font-family: var(--font-mono); }
+
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

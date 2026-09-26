@@ -1,10 +1,14 @@
 package com.acme.sre.ai.diagnostics;
 
+import com.acme.sre.ai.support.AgentMemory;
 import com.acme.sre.domain.diagnosis.Diagnosis;
 import com.acme.sre.domain.diagnosis.RemediationAction;
 import com.acme.sre.domain.model.Severity;
 
 import dev.langchain4j.agentic.Agent;
+import dev.langchain4j.agentic.declarative.ChatMemoryProviderSupplier;
+import dev.langchain4j.memory.ChatMemory;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
@@ -24,7 +28,13 @@ destructive is true if the action could disrupt service (RESTART_POD and SCALE_D
 For high-severity, prefer stabilizing actions. For low-severity, prefer investigation and notification.
         """)
     @UserMessage("Service: {service}, Diagnosis: {diagnosis}, Severity: {severity}. Suggest remediation.")
-    RemediationAction suggest(@V("service") String service,
+    RemediationAction suggest(@MemoryId String memoryId,
+            @V("service") String service,
             @V("diagnosis") Diagnosis diagnosis,
             @V("severity") Severity severity);
+
+    @ChatMemoryProviderSupplier
+    static ChatMemory chatMemory(Object memoryId) {
+        return AgentMemory.perIncident(memoryId);
+    }
 }

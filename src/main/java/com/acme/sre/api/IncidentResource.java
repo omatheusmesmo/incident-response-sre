@@ -139,7 +139,7 @@ public class IncidentResource {
         String incidentId = createIncident(alertInput);
         String value = valueOf(alertInput);
 
-        Severity severity = severityClassifier.classify(
+        Severity severity = severityClassifier.classify(incidentId,
                 alertInput.message(), alertInput.service(), alertInput.metric(), value);
         Evidence evidence = evidenceGatherer.gather(incidentId,
                 alertInput.service(), alertInput.message(), alertInput.metric(), value);
@@ -171,7 +171,7 @@ public class IncidentResource {
         String incidentId = createIncident(alertInput);
         String value = valueOf(alertInput);
 
-        Severity severity = severityClassifier.classify(
+        Severity severity = severityClassifier.classify(incidentId,
                 alertInput.message(), alertInput.service(), alertInput.metric(), value);
         Evidence evidence = evidenceGatherer.gather(incidentId,
                 alertInput.service(), alertInput.message(), alertInput.metric(), value);
@@ -208,7 +208,7 @@ public class IncidentResource {
                 alertInput.service(), alertInput.message(), alertInput.metric(), valueOf(alertInput));
         LOG.infof("[L2:supervisor] commander assessing | incident=%s service=%s", incidentId, alertInput.service());
 
-        String assessment = incidentCommander.command(incidentText);
+        String assessment = incidentCommander.command(incidentId, incidentText);
 
         LOG.infof("[L2:supervisor] assessment done | incident=%s", incidentId);
         return CommanderResponse.of(incidentId, assessment);

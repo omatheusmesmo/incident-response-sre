@@ -1,4 +1,5 @@
 {
+  "priority": 10,
   "request": {
     "method": "GET",
     "urlPathPattern": "/prometheus/query.*"
@@ -9,7 +10,7 @@
       "Content-Type": "application/json"
     },
     "jsonBody": {
-      "service": "api-gateway",
+      "service": "unknown-service",
       "cpuUsage": 95.0,
       "memoryUsage": 89.0,
       "errorRate": 12.0,

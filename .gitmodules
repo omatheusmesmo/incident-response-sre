@@ -1,0 +1,3 @@
+[submodule "src/main/resources/META-INF/resources/talks"]
+	path = src/main/resources/META-INF/resources/talks
+	url = https://github.com/mcruzdev/talks

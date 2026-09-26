@@ -7,6 +7,10 @@ The point of the demo is the **combination**: LangChain4j gives you the agents, 
 ## Quick start
 
 ```bash
+# The talk deck is a git submodule (mcruzdev/talks), served at /talks/...
+git clone --recurse-submodules <this repo>
+# already cloned? git submodule update --init
+
 # Default provider is NVIDIA NIM (OpenAI-compatible). Export your key:
 export NVIDIA_AI_API_KEY=nvapi-...
 ./mvnw quarkus:dev
@@ -18,13 +22,13 @@ No NVIDIA key? Run fully local on Ollama (Dev Services starts it and pulls the m
 ./mvnw quarkus:dev -Dquarkus.profile=ollama,dev
 ```
 
-Then open the **live console at http://localhost:8080/** and trigger an incident to watch it run → pause for approval → resolve. Dev Services starts PostgreSQL, Kafka (Redpanda), and WireMock automatically (plus Ollama on the `ollama` profile).
+Then open **http://localhost:8080/** (landing) or the **live console at http://localhost:8080/console.html**. Pick a scenario, run it, and the answer lands right below it. Dev Services starts PostgreSQL, Kafka, and WireMock automatically (plus Ollama on the `ollama` profile).
 
-> Flow `0.10.0` and Quarkus LangChain4j `1.11.0.CR1` both resolve from public repositories - no local build step required.
+The deck the demo belongs to is served from the submodule at <http://localhost:8080/talks/slides/agentic-workflows-com-quarkus-flow-e-langchain4j.html>.
 
 ## The 3-Layer Evolution
 
-### Layer 1: ChatModel (a single AI Service)
+### Layer 1: AI Service (`@RegisterAiService`)
 
 A single `@RegisterAiService` that turns alert text into structured analysis. Stateless: no memory, no iteration, no durability.
 
@@ -43,8 +47,8 @@ Each agentic pattern is exposed on its own endpoint so you can see them in isola
 
 | Pattern | Endpoint | What it shows |
 |---------|----------|---------------|
-| `@ParallelAgent` | `POST /incidents/parallel` | Fan-out: logs + metrics + deploy-history evidence agents run concurrently (on a small/fast model). |
-| `@ConditionalAgent` | `POST /incidents/conditional` | Severity router: P1/P2 take a deep evidence-driven diagnosis, P3/P4 a light triage (`@ActivationCondition`). |
+| `@ParallelAgent` | `POST /incidents/parallel` | Fan-out: logs + metrics + deploy-history evidence agents run concurrently, each grounded by an `@Tool` (see below). |
+| `@ConditionalAgent` | `POST /incidents/conditional` | Severity router: P1/P2 take a deep evidence-driven diagnosis, P3/P4 a light triage (`@ActivationCondition`). Both branches are `@SequenceAgent`s. |
 | `@LoopAgent` | `POST /incidents/loop` | Diagnose → remediate → score, refined until `@ExitCondition` confidence ≥ 0.8. Carries an `@ErrorHandler` for resilience (see below). |
 | `@SupervisorAgent` | `POST /incidents/commander` | An LLM "incident commander" autonomously decides which domain specialists (database, kubernetes, network, cache) to consult, then synthesizes their findings (`responseStrategy = SUMMARY`). |
 
@@ -59,7 +63,33 @@ curl -X POST http://localhost:8080/incidents/commander \
 
 All four bodies use the same `AlertInput` shape as Layer 1.
 
-**Big + small model split.** The default provider (NVIDIA NIM) uses `meta/llama-3.3-70b-instruct` for reasoning and the smaller `meta/llama-3.1-8b-instruct` (`@ModelName("evidence")`) for the parallel evidence agents and the supervisor specialists, keeping the concurrent fan-out cheap against the rate limit.
+**Two models.** The default provider (NVIDIA NIM) uses `meta/llama-3.2-11b-vision-instruct` for triage, diagnosis and the post-mortem, and `nvidia/nemotron-3-super-120b-a12b` (`@ModelName("evidence")`) for the evidence agents and the supervisor specialists. The evidence model must be reliable at tool calling: llama-3.2-11b answered with fake tool calls as plain text.
+
+#### Tools: a simulated observability stack
+
+The evidence agents do not guess. Each one carries `@ToolBox(ObservabilityTools.class)` (the per-method form of `@RegisterAiService(tools = ...)`), and `ObservabilityTools` exposes three `@Tool`s over a REST client (`ObservabilityClient`, `quarkus-rest-client-jackson`):
+
+| Tool | Endpoint | Returns |
+|------|----------|---------|
+| `queryMetrics(service)` | `GET /prometheus/query?service=` | CPU, memory, error rate, p99 |
+| `searchLogs(service)` | `GET /logs?service=` | recent log lines, newest first |
+| `listDeployments(service)` | `GET /deployments?service=` | deployments and feature-flag changes |
+
+In dev and test the endpoints are the WireMock Dev Service. `src/test/resources/mappings/world-*.json` holds **one coherent story per service**, matching the console scenarios:
+
+| Service | Story |
+|---------|-------|
+| `api-gateway` | v4.12.0 at 14:00 reads an optional `user.profile`; `NullPointerException` in `UserMapper.toDto`, 502s |
+| `payment-service` | v2.3.0 reversed the lock order in `LedgerService`; Java-level deadlock, liveness probe fails, `CrashLoopBackOff` |
+| `payments-api` | v2.3.0 added an `IdempotencyCache` without eviction; heap 97%, `OutOfMemoryError` |
+| `checkout-api` | feature flag `checkout.recommendations.inline` at 13:30; one query per cart item, HikariCP pool exhausted |
+| `recommendations-api` | campaign traffic 2.6x, HPA at max replicas, no deploy; capacity-bound latency |
+
+The findings therefore quote real evidence (versions, timestamps, exceptions) and are the same run after run.
+
+#### Agent memory: one conversation per incident
+
+Every `@Agent` takes `@MemoryId String memoryId` (the incident id, propagated from the parent pattern's `AgenticScope`) and declares a `@ChatMemoryProviderSupplier` (`AgentMemory.perIncident`). Without that, all agents shared Quarkus' default memory under one id: parallel agents read each other's messages and a new incident inherited the previous one's history, so agents answered without calling their tools. Request scope is not an alternative here: in Layer 3 the agents run on Quarkus Flow threads, outside any HTTP request, and a durable workflow may resume after a restart. This follows the Quarkus LangChain4j agentic guide ("use `@MemoryId` to ensure per-conversation isolation") and the Quarkus Flow LangChain4j guide (application-scoped agent + `@MemoryId`).
 
 #### Agentic resilience: `@ErrorHandler`
 
@@ -76,11 +106,11 @@ The `IncidentResponseFlow` orchestrates the agentic work and adds what agents al
 - **Agentic subflow**: the diagnosis stage is an agentic pipeline wired in as a Flow `function(...)` task (`IncidentDiagnosisService` → classify → gather evidence → severity-routed diagnosis), its result exported as task output.
 - **Durability**: MVStore-backed persistence (a file at `~/incident-response-sre-flow.mv.db`). Workflow state survives a full JVM restart.
 - **Human-in-the-Loop**: destructive remediations (`RESTART_POD`, `SCALE_DOWN`) require SRE approval. The workflow emits an approval-request CloudEvent, pauses at `listen`, and resumes when the approval/rejection event arrives.
-- **External integrations**: HTTP tasks fetch Prometheus metrics, execute remediation via a deployment API, and notify Slack (all stubbed by WireMock in dev/test).
+- **External integrations**: HTTP tasks fetch Prometheus metrics for the alerted service (`get(...).query("service", "${ $workflow.input.service }")`), execute remediation via a deployment API, and notify Slack (all stubbed by WireMock in dev/test).
 - **End-to-end type safety**: every Flow transform is fully typed - no `Object.class`. The Prometheus response deserializes into a `MetricsSnapshot` record that is folded into `IncidentResult` (`withLiveMetrics`) and re-exported to the workflow context, so the live telemetry survives downstream restores and feeds the post-mortem prompt. HTTP request/response bodies (`SlackMessage`/`SlackAck`, `RemediationCommand`) and the rejection branch (`RemediationRejection`) are records, not maps.
 - **Agentic post-mortem**: after remediation, a post-mortem agent (`WorkflowPostMortemAgent`) summarizes the incident (using the diagnosis, remediation and live metrics) as its own Flow `agent(...)` task; the generated summary is captured back into `IncidentResult` (`withPostMortem`) and projected onto the `Incident` record.
 - **Event-driven both ways**: consumes alerts/approvals from `flow-in`; publishes domain events (`flow-out`) and per-task lifecycle (`flow-lifecycle-out`) as CloudEvents over Kafka.
-- **Read-model projection**: `IncidentEventBridge` consumes the workflow's own `flow-out` events and projects them back onto the `Incident` JPA record (`PENDING_APPROVAL` when it pauses for HITL, `RESOLVED` when it completes), so `GET /incidents/{id}` stays consistent with the live dashboard.
+- **Read-model projection**: `IncidentEventBridge` consumes the workflow's own `flow-out` events and projects them back onto the `Incident` JPA record (`PENDING_APPROVAL` when it pauses for HITL, `RESOLVED` when it completes), so `GET /incidents/{id}` stays consistent with the live dashboard. The consumer is `@Blocking`: the projection is a JPA transaction and must not run on the Kafka event loop.
 
 **Endpoints:**
 
@@ -142,12 +172,12 @@ Six `WorkflowDefinition` beans are registered - five AOT-compiled agentic graphs
 
 ## Eventing (CloudEvents over Kafka)
 
-The app both **consumes from** and **publishes to** Kafka topics (Redpanda via Dev Services). Everything is CloudEvents:
+The app both **consumes from** and **publishes to** Kafka topics (Kafka via Dev Services). Everything is CloudEvents:
 
 | Topic | App direction | By | Carries |
 |-------|---------------|----|---------|
 | `flow-in` | **consume** | Flow engine | alerts and approval/rejection replies that start or resume workflows |
-| `flow-in` | **publish** | `IncidentResource` (`flow-in-outgoing`) | the approval/rejection CloudEvent sent when an SRE clicks approve/reject |
+| `flow-in` | **publish** | `ApprovalEventPublisher` (`flow-in-outgoing`) | the approval/rejection CloudEvent sent when an SRE clicks approve/reject |
 | `flow-out` | **publish** | Flow domain publisher | workflow `emit`s (`incident.approval.required`, `incident.resolved`) |
 | `flow-out` | **consume** | `IncidentEventBridge` | forwarded to the dashboard WebSocket |
 | `flow-lifecycle-out` | **publish** | Flow lifecycle publisher | per-task lifecycle (`task.started/completed`, `workflow.started/completed`) |
@@ -155,13 +185,28 @@ The app both **consumes from** and **publishes to** Kafka topics (Redpanda via D
 
 Publishing is enabled by `quarkus.flow.messaging.defaults-enabled=true` (domain) and `quarkus.flow.messaging.lifecycle-enabled=true` (lifecycle). Flow's domain publisher binds only to a channel named exactly **`flow-out`**.
 
+Two details make HITL work end to end:
+
+- **Binary-mode CloudEvents.** Flow only accepts `flow-in` records that carry CloudEvent metadata (`ce_*` headers). `ApprovalEventPublisher` sends the decision as the payload with `OutgoingCloudEventMetadata` (type `com.acme.sre.incident.approval.done`, extension `flowinstanceid`); a CloudEvent serialized into the record body is dropped and the workflow never resumes.
+- **One consumer group per instance for the console.** `flow-out-incoming` and `flow-lifecycle-incoming` broadcast to this instance's WebSocket clients, so they use `incident-dashboard-${quarkus.uuid}`. With the shared default group, Kafka gave the single partition to one instance only; since Dev Services shares the broker across local instances and test runs, a second instance silently froze the other console's stepper. `flow-in` keeps the shared group: it is the engine's work queue.
+- **Pre-created topics.** The consumers use `auto.offset.reset=latest`. On a fresh Dev Services broker the message that auto-creates a topic lands before the consumer's first offset and is skipped, so `quarkus.kafka.devservices.topic-partitions.*` creates `flow-in`, `flow-out` and `flow-lifecycle-out` up front.
+
 ## Observing the demo
 
-### Live console (recommended) - `http://localhost:8080/`
+### Live console (recommended) - `http://localhost:8080/console.html`
 
-A lightweight dashboard (static HTML + a `@ServerEndpoint` WebSocket fed by the Flow `flow-out` topic, no Quinoa/npm) at `/console.html`. It drives **all three layers** from one screen: run the L1 ChatModel and the four L2 patterns (synchronous result cards), and trigger the L3 durable workflow - watching incidents update live (`TRIAGING → ⏸ AWAITING APPROVAL → RESOLVED`) and approving/rejecting a destructive remediation right from the card.
+Static HTML and plain ES modules (no build step, no framework) in the talk deck's visual identity. A left rail lists the scenarios in the order of the talk: **AI Service**, the **agentic patterns** (Parallel, Loop, Conditional), the **Supervisor** set apart as an agent (the LLM decides the path), and the two **Quarkus Flow** workflows. Selecting one shows the annotation excerpt, the endpoint and the payload; results land right below, newest first:
 
-Implementation: `com.acme.sre.messaging.IncidentEventBridge` (consumes `flow-out`/`flow-lifecycle-out`) + `IncidentDashboardSocket` (`/ws/incidents`) + `META-INF/resources/{index,console}.html` (landing + console).
+- **AI Service**: severity, probable cause and suggested action.
+- **Parallel**: one box per `outputKey`, labelled with the `@Tool` the agent called, plus the `@Output` combiner.
+- **Conditional**: the `@ActivationCondition` decision and which `@SequenceAgent` branch ran.
+- **Loop**: the confidence meter against the `0.8` `@ExitCondition` threshold.
+- **Supervisor**: the commander's summary.
+- **Flow**: a live stepper (AI tasks, HTTP calls and events styled differently), the approval card with Approve/Reject, and the post-mortem once resolved. A run waiting for approval is pinned to the top and flagged in the rail.
+
+LLM output is rendered as a small, safe Markdown subset built from DOM nodes (never `innerHTML`).
+
+Implementation: `IncidentEventBridge` (consumes `flow-out`/`flow-lifecycle-out`) + `IncidentDashboardSocket` (`/ws/incidents`) + `META-INF/resources/console.html` with `assets/` (`scenarios.js` catalog, `renderers.js` per-pattern views, `console.js` runs/WebSocket/approval, `brand.css` shared tokens).
 
 ### Other surfaces
 
@@ -180,12 +225,12 @@ flowchart TD
     A --> L2
     A --> L3
 
-    subgraph L1["Layer 1 - ChatModel"]
+    subgraph L1["Layer 1 - AI Service"]
         AN["IncidentAnalyzer · @RegisterAiService<br/>single stateless AI call"]
     end
 
     subgraph L2["Layer 2 - Agentic patterns (each one level deep)"]
-        P["/parallel · EvidenceGatherer<br/>@ParallelAgent: logs + metrics + deploy"]
+        P["/parallel · EvidenceGatherer<br/>@ParallelAgent: logs + metrics + deploy, each with @Tools"]
         C["/conditional · SeverityRouter<br/>@ConditionalAgent → DeepDiagnosis / LightTriage"]
         LP["/loop · DiagnosticLoopAgent<br/>@LoopAgent + @ErrorHandler, exit when score ≥ 0.8"]
         CM["/commander · IncidentCommander<br/>@SupervisorAgent → DB · K8s · Network · Cache"]
@@ -194,7 +239,7 @@ flowchart TD
     subgraph L3["Layer 3 - IncidentResponseFlow (durable · HITL · event-driven)"]
         direction TB
         D["function: agenticDiagnosis<br/>(Layer 2 pipeline as a Flow task)"]
-        M["get: fetchMetrics<br/>→ MetricsSnapshot, withLiveMetrics"]
+        M["get: fetchMetrics?service=<br/>→ MetricsSnapshot, withLiveMetrics"]
         SW{"remediation<br/>destructive?"}
         AP["emit: approval.required"]
         WAIT["listen: waitSREApproval"]
@@ -232,8 +277,10 @@ src/main/java/com/acme/sre/
 │   │   └── IncidentDiagnosisService        plain CDI orchestration used by the Flow task
 │   ├── commander/                         Layer 2 - @SupervisorAgent + 4 domain specialists
 │   ├── response/WorkflowPostMortemAgent   Layer 3 - post-mortem agent (a Flow task)
-│   └── support/                           lenient JSON hardening (ConfidenceScore deser) for agentic/Flow paths
+│   ├── tools/ObservabilityTools           @Tools for the evidence agents (metrics, logs, deployments)
+│   └── support/                           AgentMemory (per-incident chat memory) + lenient JSON hardening
 ├── flow/IncidentResponseFlow              Layer 3 - the durable Workflow descriptor
+├── observability/                         ObservabilityClient (REST client) + LogEntry / DeploymentRecord
 ├── api/                                   REST boundary
 │   ├── IncidentResource                   endpoints (alert / parallel / conditional / loop / commander / workflow / approve / reject / get), returns typed DTOs
 │   ├── dto/                               response DTOs + IncidentView (entity never exposed) + ApiError
@@ -245,34 +292,38 @@ src/main/java/com/acme/sre/
     └── contract/                          boundary payloads (AlertInput, TriagePrompt, ApprovalResponse, SlackMessage/SlackAck, RemediationCommand/Rejection)
 src/main/resources/
 ├── application.properties                 LLM, datasource, Flow persistence + exclude-workflows, Kafka channels
-└── META-INF/resources/{index,console}.html  landing page + the all-layers live console
-src/test/resources/mappings/              WireMock stubs (Prometheus / deployment / Slack)
+└── META-INF/resources/
+    ├── index.html, console.html           landing page + the all-layers live console
+    ├── assets/                            brand.css, console.css, scenarios.js, renderers.js, console.js, dom.js
+    └── talks/                             git submodule: mcruzdev/talks (the deck)
+src/test/resources/mappings/              WireMock stubs: world-*.json (per-service metrics/logs/deployments), deployment, Slack
 docker-compose.yml                         optional persistent Postgres
 ```
 
 ## Tech stack
 
-- **Quarkus** 3.36.0 (Java 25)
-- **Quarkus LangChain4j** 1.11.0.CR1 (Agentic; OpenAI/NVIDIA + Ollama providers)
-- **Quarkus Flow** 0.10.0 (`mvstore` persistence, `messaging`, `langchain4j`)
+- **Quarkus** 3.39.5 (Java 25)
+- **Quarkus LangChain4j** 1.14.0 (Agentic, `@Tool`s; OpenAI/NVIDIA + Ollama providers)
+- **Quarkus Flow** 1.1.3 (`mvstore` persistence, `messaging`, `langchain4j`)
 - **Quarkus REST** (`rest-jackson`, the reactive stack) - typed DTO endpoints + exception mapper
+- **Quarkus REST Client** (`rest-client-jackson`) - the observability API behind the `@Tool`s
 - **Hibernate ORM with Panache** on **PostgreSQL** - the `Incident`/`Alert` read model
 - **SmallRye Reactive Messaging (Kafka)** + **CloudEvents** - the event bus (`flow-in` / `flow-out` / `flow-lifecycle-out`)
 - **WebSockets** - the live console feed
-- **PostgreSQL**, **Kafka/Redpanda**, **WireMock** - all via Dev Services
+- **PostgreSQL**, **Kafka**, **WireMock** - all via Dev Services
 - **Ollama** (optional, `ollama` profile) for fully-local runs
 
 ## Testing
 
 ```bash
 # Default suite: deterministic, no real LLM (agentic beans / ChatModel / Flow are mocked)
-./mvnw test
+./mvnw verify
 
-# End-to-end against a real LLM (slow; excluded by the `real-llm` JUnit tag)
-./mvnw test -Preal-llm
+# End-to-end against the real NVIDIA models (needs NVIDIA_AI_API_KEY; excluded by the `real-llm` JUnit tag)
+./mvnw verify -Preal-llm
 ```
 
-The default suite (26 tests) covers: lenient confidence parsing, the `@LoopAgent` exit condition and `@ErrorHandler` recovery logic (pure unit tests), the per-pattern Layer 2 endpoints (parallel / conditional / loop / commander) with mocked agentic beans, the Layer 3 workflow start + HITL endpoints, the workflow→`Incident` read-model projection, and the WireMock-stubbed integrations. Tests run on the `test` profile (pinned to Ollama; no NVIDIA key needed).
+The default suite covers: lenient confidence parsing, the `@LoopAgent` exit condition and `@ErrorHandler` recovery logic (pure unit tests), the HITL approval CloudEvent metadata (`ApprovalEventPublisher`), the per-pattern Layer 2 endpoints (parallel / conditional / loop / commander) with mocked agentic beans, the Layer 3 workflow start + HITL endpoints, the workflow→`Incident` read-model projection, the per-service WireMock world and the `@Tool`s reading it. Tests use their own WireMock port (8189), so they also run while `quarkus:dev` holds 8089.
 
 ## Crash recovery
 

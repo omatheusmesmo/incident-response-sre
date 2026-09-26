@@ -1,9 +1,13 @@
 package com.acme.sre.ai.diagnostics;
 
+import com.acme.sre.ai.support.AgentMemory;
 import com.acme.sre.domain.diagnosis.Diagnosis;
 import com.acme.sre.domain.diagnosis.RemediationAction;
 
 import dev.langchain4j.agentic.Agent;
+import dev.langchain4j.agentic.declarative.ChatMemoryProviderSupplier;
+import dev.langchain4j.memory.ChatMemory;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
@@ -20,6 +24,12 @@ public interface ConfidenceScorer {
         Be strict: if the diagnosis is vague or the action is generic, score below 0.7.
         """)
     @UserMessage("Diagnosis: {diagnosis}, Remediation: {remediation}. Score confidence (number only).")
-    String score(@V("diagnosis") Diagnosis diagnosis,
+    String score(@MemoryId String memoryId,
+            @V("diagnosis") Diagnosis diagnosis,
             @V("remediation") RemediationAction remediation);
+
+    @ChatMemoryProviderSupplier
+    static ChatMemory chatMemory(Object memoryId) {
+        return AgentMemory.perIncident(memoryId);
+    }
 }

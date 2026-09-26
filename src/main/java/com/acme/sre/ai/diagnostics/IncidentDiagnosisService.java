@@ -46,7 +46,7 @@ public class IncidentDiagnosisService {
         LOG.infof("[L3:diagnose] agentic pipeline start | incident=%s service=%s metric=%s",
                 memoryId, alert.service(), alert.metric());
 
-        Severity severity = severityClassifier.classify(
+        Severity severity = severityClassifier.classify(memoryId,
                 alert.message(), alert.service(), alert.metric(), alert.value());
         LOG.infof("[L3:diagnose] classified | incident=%s severity=%s path=%s",
                 memoryId, severity, isDeep(severity) ? "deep" : "light");

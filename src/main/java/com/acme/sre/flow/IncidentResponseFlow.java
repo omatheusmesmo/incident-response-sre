@@ -65,6 +65,7 @@ public class IncidentResponseFlow extends Flow {
                                 .exportAsTaskOutput(),
 
                         get("fetchMetrics", prometheusUrl)
+                                .query("service", "${ $workflow.input.service }")
                                 .outputAs((MetricsSnapshot live, WorkflowContextData wf, TaskContextData tf) ->
                                                 diagnosed(wf).withLiveMetrics(live),
                                         MetricsSnapshot.class)
