@@ -1,0 +1,110 @@
+{
+  "mappings": [
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/prometheus/query",
+        "queryParameters": {
+          "service": {
+            "equalTo": "payment-service"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "service": "payment-service",
+          "cpuUsage": 3.0,
+          "memoryUsage": 71.0,
+          "errorRate": 100.0,
+          "latencyP99": 30000.0,
+          "rawQuery": "rate(http_requests_total{service=\"payment-service\",status=~\"5..\"}[5m])"
+        }
+      }
+    },
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/logs",
+        "queryParameters": {
+          "service": {
+            "equalTo": "payment-service"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "timestamp": "2026-09-26T13:58:47Z",
+            "level": "ERROR",
+            "logger": "jvm.ThreadDump",
+            "message": "Found one Java-level deadlock: \"pool-2-thread-7\" waiting to lock <0x7f3a> (LedgerService) held by \"pool-2-thread-3\", which waits for <0x7f1c> (PaymentAuthorizer) held by \"pool-2-thread-7\""
+          },
+          {
+            "timestamp": "2026-09-26T13:59:05Z",
+            "level": "WARN",
+            "logger": "kubelet",
+            "message": "Liveness probe failed: HTTP probe failed with statuscode: 503"
+          },
+          {
+            "timestamp": "2026-09-26T13:59:35Z",
+            "level": "WARN",
+            "logger": "kubelet",
+            "message": "Back-off restarting failed container payment-service (CrashLoopBackOff), restart count 6"
+          },
+          {
+            "timestamp": "2026-09-26T13:52:30Z",
+            "level": "INFO",
+            "logger": "c.a.payment.Startup",
+            "message": "payment-service v2.3.0 started"
+          }
+        ]
+      }
+    },
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/deployments",
+        "queryParameters": {
+          "service": {
+            "equalTo": "payment-service"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "service": "payment-service",
+            "version": "v2.3.0",
+            "deployedAt": "2026-09-26T13:52:00Z",
+            "author": "team-payments",
+            "type": "DEPLOY",
+            "change": "LedgerService now locks the ledger before calling PaymentAuthorizer (lock order reversed vs. the refund path)"
+          },
+          {
+            "service": "payment-service",
+            "version": "v2.2.4",
+            "deployedAt": "2026-09-12T09:40:00Z",
+            "author": "team-payments",
+            "type": "DEPLOY",
+            "change": "Refund path hardening"
+          }
+        ]
+      }
+    }
+  ]
+}

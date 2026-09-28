@@ -64,7 +64,7 @@ class IncidentResourceLayer2Test {
 
     @BeforeEach
     void setUp() {
-        Mockito.when(severityClassifier.classify(anyString(), anyString(), anyString(), anyString()))
+        Mockito.when(severityClassifier.classify(anyString(), anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Severity.P2_HIGH);
 
         Mockito.when(evidenceGatherer.gather(anyString(), anyString(), anyString(), anyString(), anyString()))
@@ -83,7 +83,7 @@ class IncidentResourceLayer2Test {
                         any(Severity.class), anyString()))
                 .thenReturn(looped);
 
-        Mockito.when(incidentCommander.command(anyString()))
+        Mockito.when(incidentCommander.command(anyString(), anyString()))
                 .thenReturn("Most probable root cause: connection pool exhaustion. Action: raise pool size and add backpressure.");
     }
 

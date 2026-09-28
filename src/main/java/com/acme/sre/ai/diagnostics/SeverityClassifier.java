@@ -1,8 +1,12 @@
 package com.acme.sre.ai.diagnostics;
 
+import com.acme.sre.ai.support.AgentMemory;
 import com.acme.sre.domain.model.Severity;
 
 import dev.langchain4j.agentic.Agent;
+import dev.langchain4j.agentic.declarative.ChatMemoryProviderSupplier;
+import dev.langchain4j.memory.ChatMemory;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
@@ -23,8 +27,14 @@ public interface SeverityClassifier {
         Respond with ONLY the enum value, nothing else.
         """)
     @UserMessage("Classify severity for this alert - Service: {service}, Metric: {metric}, Value: {value}, Message: {message}")
-    Severity classify(@V("message") String message,
-                      @V("service") String service,
-                      @V("metric") String metric,
-                      @V("value") String value);
+    Severity classify(@MemoryId String memoryId,
+            @V("message") String message,
+            @V("service") String service,
+            @V("metric") String metric,
+            @V("value") String value);
+
+    @ChatMemoryProviderSupplier
+    static ChatMemory chatMemory(Object memoryId) {
+        return AgentMemory.perIncident(memoryId);
+    }
 }

@@ -1,0 +1,110 @@
+{
+  "mappings": [
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/prometheus/query",
+        "queryParameters": {
+          "service": {
+            "equalTo": "api-gateway"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "service": "api-gateway",
+          "cpuUsage": 41.0,
+          "memoryUsage": 58.0,
+          "errorRate": 15.5,
+          "latencyP99": 1900.0,
+          "rawQuery": "rate(http_requests_total{service=\"api-gateway\",status=~\"5..\"}[5m])"
+        }
+      }
+    },
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/logs",
+        "queryParameters": {
+          "service": {
+            "equalTo": "api-gateway"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "timestamp": "2026-09-26T14:02:11Z",
+            "level": "ERROR",
+            "logger": "c.a.gateway.users.UserMapper",
+            "message": "java.lang.NullPointerException: Cannot invoke \"Profile.getLocale()\" because \"user.profile\" is null at UserMapper.toDto(UserMapper.java:88)"
+          },
+          {
+            "timestamp": "2026-09-26T14:02:11Z",
+            "level": "WARN",
+            "logger": "c.a.gateway.web.ErrorHandler",
+            "message": "GET /api/v2/users/{id} -> 502 Bad Gateway (upstream mapping failure)"
+          },
+          {
+            "timestamp": "2026-09-26T14:03:40Z",
+            "level": "ERROR",
+            "logger": "c.a.gateway.users.UserMapper",
+            "message": "NullPointerException in UserMapper.toDto repeated 1,284 times in the last 60s"
+          },
+          {
+            "timestamp": "2026-09-26T13:58:02Z",
+            "level": "INFO",
+            "logger": "c.a.gateway.Startup",
+            "message": "api-gateway v4.12.0 started, feature \"user-profile-v2\" enabled"
+          }
+        ]
+      }
+    },
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/deployments",
+        "queryParameters": {
+          "service": {
+            "equalTo": "api-gateway"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "service": "api-gateway",
+            "version": "v4.12.0",
+            "deployedAt": "2026-09-26T14:00:00Z",
+            "author": "team-identity",
+            "type": "DEPLOY",
+            "change": "New UserMapper.toDto reads user.profile.locale for the v2 users API; profile is optional for legacy accounts"
+          },
+          {
+            "service": "api-gateway",
+            "version": "v4.11.3",
+            "deployedAt": "2026-09-19T10:15:00Z",
+            "author": "team-platform",
+            "type": "DEPLOY",
+            "change": "Dependency bumps, no functional changes"
+          }
+        ]
+      }
+    }
+  ]
+}

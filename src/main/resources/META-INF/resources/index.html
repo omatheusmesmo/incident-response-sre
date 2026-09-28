@@ -1,61 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Incident Response SRE — Quarkus + AI</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Incident Response SRE</title>
+<link rel="stylesheet" href="/assets/brand.css">
 <style>
-  :root{--bg:#1a1b26;--bg2:#16161e;--panel:#1f2335;--line:#29304a;--text:#c0caf5;
-        --muted:#565f89;--blue:#7aa2f7;--purple:#bb9af7;--cyan:#7dcfff;--green:#9ece6a}
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;background:
-        radial-gradient(1200px 600px at 50% -10%, #24283b 0%, var(--bg2) 60%);
-        color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
-        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;padding:40px}
-  header{text-align:center}
-  h1{margin:0;font-size:34px;font-weight:680;color:var(--blue);letter-spacing:.2px}
-  h1 span{color:var(--purple)}
-  .sub{color:var(--muted);margin-top:8px;font-size:15px}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:760px;width:100%}
-  a.card{display:flex;flex-direction:column;gap:8px;padding:24px;border:1px solid var(--line);border-radius:16px;
-         background:var(--panel);color:var(--text);text-decoration:none;transition:.16s}
-  a.card:hover{border-color:var(--blue);transform:translateY(-3px);box-shadow:0 14px 40px rgba(0,0,0,.45)}
-  .card .ico{font-size:26px}
-  .card .t{font-size:18px;font-weight:680;color:var(--cyan)}
-  .card.demo .t{color:var(--green)}
-  .card .d{color:var(--muted);font-size:14px}
-  .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
-  .links a{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:3px 9px;border-radius:20px;text-decoration:none}
-  .links a:hover{color:var(--cyan);border-color:var(--cyan)}
-  footer{color:var(--muted);font-size:13px}
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 48px;
+    max-width: 1080px; width: 100%; margin: 0 auto; padding: 56px 24px; }
+  .kicker { font: 700 13px var(--font-display); letter-spacing: .16em; text-transform: uppercase; color: var(--blue); }
+  h1 { font: 900 clamp(40px, 7vw, 76px)/1 var(--font-display); letter-spacing: -.035em; margin: 12px 0 18px; }
+  .lede { font-size: 20px; color: var(--ink); max-width: 720px; margin: 20px 0 0; }
+  .lede b { color: var(--blue); }
+  .cards { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+  .card { display: flex; flex-direction: column; gap: 10px; padding: 26px 28px; border-radius: 12px;
+    background: var(--surface); box-shadow: var(--shadow); border-top: 4px solid var(--blue);
+    color: var(--dark); text-decoration: none; transition: transform .16s, box-shadow .16s; }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .card.primary { border-top-color: var(--red); }
+  .card .t { font: 900 26px/1.1 var(--font-display); letter-spacing: -.02em; }
+  .card .d { color: var(--muted); }
+  .layers { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .layers span { font: 600 12px var(--font-mono); padding: 3px 10px; border-radius: 999px;
+    background: rgba(70, 149, 235, .1); color: var(--blue); }
+  .go { margin-top: auto; font: 700 15px var(--font-display); color: var(--blue); }
+  .card.primary .go { color: var(--red); }
+  footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 18px 24px; font-size: 14px; color: var(--muted); max-width: 1080px; width: 100%; margin: 0 auto; }
+  footer nav { display: flex; gap: 18px; }
+  footer a { text-decoration: none; font-weight: 500; }
+  @media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
+<main>
   <header>
-    <h1>🛟 Incident Response SRE <span>· Quarkus + AI</span></h1>
-    <div class="sub">LangChain4j × Flow — durable, human-gated AI workflows</div>
+    <div class="kicker">Demo · Agentic Workflows com Quarkus Flow e LangChain4J</div>
+    <h1>Incident Response <span class="grad-text">SRE</span></h1>
+    <span class="grad-bar"></span>
+    <p class="lede">An alert goes in. An <b>AI Service</b> classifies it, <b>agentic patterns</b> investigate it,
+      and a durable <b>Quarkus Flow</b> workflow remediates it, pausing for a human when the fix is destructive.</p>
   </header>
 
   <div class="cards">
-    <a class="card demo" href="/console.html">
-      <div class="ico">📟</div>
-      <div class="t">Live demo console</div>
-      <div class="d">All three layers in one place: L1 ChatModel, the four L2 agentic patterns (parallel / conditional / loop / supervisor), and the L3 durable workflow with live HITL approval.</div>
+    <a class="card primary" href="/console.html">
+      <span class="t">Live console</span>
+      <span class="d">Run every scenario from the talk and watch the answers arrive: one AI Service, the agentic patterns, and the durable workflow with human approval.</span>
+      <span class="layers"><span>@RegisterAiService</span><span>@ParallelAgent</span><span>@LoopAgent</span><span>@ConditionalAgent</span><span>Quarkus Flow</span></span>
+      <span class="go">Open console →</span>
     </a>
-    <a class="card" href="/slides/">
-      <div class="ico">🎞️</div>
-      <div class="t">Slides</div>
-      <div class="d">A short deck on both libraries and the project — English &amp; Português.</div>
-      <div class="links">
-        <a href="/slides/en.html">EN</a>
-        <a href="/slides/pt.html">PT</a>
-      </div>
+    <a class="card" href="/talks/slides/agentic-workflows-com-quarkus-flow-e-langchain4j.html">
+      <span class="t">Slides</span>
+      <span class="d">The deck this demo belongs to: AI Services, tools, the four agentic patterns and Quarkus Flow.</span>
+      <span class="go">Open slides →</span>
     </a>
   </div>
-
-  <footer>
-    Also: <a href="/q/swagger-ui" style="color:var(--cyan)">Swagger</a> ·
-    <a href="/q/dev-ui" style="color:var(--cyan)">Dev UI</a>
-  </footer>
+</main>
+<footer>
+  <span>Matheus Oliveira e Matheus Cruz</span>
+  <nav><a href="/q/swagger-ui">Swagger UI</a><a href="/q/dev-ui">Dev UI</a></nav>
+</footer>
 </body>
 </html>

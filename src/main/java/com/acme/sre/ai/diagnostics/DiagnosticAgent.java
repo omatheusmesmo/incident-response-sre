@@ -1,9 +1,13 @@
 package com.acme.sre.ai.diagnostics;
 
+import com.acme.sre.ai.support.AgentMemory;
 import com.acme.sre.domain.diagnosis.Diagnosis;
 import com.acme.sre.domain.model.Severity;
 
 import dev.langchain4j.agentic.Agent;
+import dev.langchain4j.agentic.declarative.ChatMemoryProviderSupplier;
+import dev.langchain4j.memory.ChatMemory;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
@@ -25,8 +29,14 @@ public interface DiagnosticAgent {
         Service: {service}, Alert: {message}, Severity: {severity}
         Evidence (logs, metrics, deploy history): {evidenceText}
         """)
-    Diagnosis diagnose(@V("service") String service,
+    Diagnosis diagnose(@MemoryId String memoryId,
+            @V("service") String service,
             @V("message") String message,
             @V("severity") Severity severity,
             @V("evidenceText") String evidenceText);
+
+    @ChatMemoryProviderSupplier
+    static ChatMemory chatMemory(Object memoryId) {
+        return AgentMemory.perIncident(memoryId);
+    }
 }

@@ -3,6 +3,7 @@ package com.acme.sre.ai.commander;
 import dev.langchain4j.agentic.declarative.SupervisorAgent;
 import dev.langchain4j.agentic.declarative.SupervisorRequest;
 import dev.langchain4j.agentic.supervisor.SupervisorResponseStrategy;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.V;
 
 public interface IncidentCommander {
@@ -18,7 +19,7 @@ public interface IncidentCommander {
             NetworkSpecialist.class,
             CacheSpecialist.class
         })
-    String command(@V("incident") String incident);
+    String command(@MemoryId String memoryId, @V("incident") String incident);
 
     @SupervisorRequest
     static String request(@V("incident") String incident) {

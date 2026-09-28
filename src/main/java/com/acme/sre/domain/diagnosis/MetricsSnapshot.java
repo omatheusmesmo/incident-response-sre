@@ -1,5 +1,7 @@
 package com.acme.sre.domain.diagnosis;
 
+import java.util.Locale;
+
 /**
  * Typed projection of the live telemetry returned by the monitoring API (Prometheus/Datadog).
  * Folded into {@link IncidentResult} by the durable workflow so the resolved event and the
@@ -14,7 +16,7 @@ public record MetricsSnapshot(
         String rawQuery) {
 
     public String toPromptText() {
-        return String.format(
+        return String.format(Locale.ROOT,
                 "Live telemetry for %s - CPU %.1f%%, memory %.1f%%, error rate %.1f%%, p99 %.0fms",
                 service, cpuUsage, memoryUsage, errorRate, latencyP99);
     }

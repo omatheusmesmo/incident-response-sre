@@ -43,6 +43,7 @@ public class IncidentEventBridge {
     ObjectMapper objectMapper;
 
     @Incoming("flow-out-incoming")
+    @Blocking
     public CompletionStage<Void> onFlowOut(Message<String> msg) {
         try {
             CloudEvent ce = resolveCloudEvent(msg);
